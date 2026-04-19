@@ -13,6 +13,15 @@
         .prioridad-ALTA { border-left-color: #ef4444 !important; }
         .prioridad-MEDIA { border-left-color: #f59e0b !important; }
         .prioridad-BAJA { border-left-color: #10b981 !important; }
+        
+        /* Estilos específicos para el GANTT */
+        .gantt-grid { display: grid; grid-template-columns: 150px 1fr; border: 1px solid #e2e8f0; }
+        .gantt-header-cell { border-bottom: 2px solid #e2e8f0; border-right: 1px solid #f1f5f9; padding: 8px; text-align: center; background: #f8fafc; }
+        .gantt-row { display: grid; grid-template-columns: 150px 1fr; border-bottom: 1px solid #f1f5f9; height: 35px; }
+        .gantt-task-name { padding: 8px; border-right: 1px solid #e2e8f0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background: white; }
+        .gantt-timeline { position: relative; background: white; overflow: hidden; }
+        .gantt-bar { position: absolute; height: 20px; top: 7px; border-radius: 4px; display: flex; align-items: center; padding-left: 5px; color: white; font-size: 9px !important; overflow: hidden; }
+        
         input, select { text-transform: none !important; }
     </style>
 </head>
@@ -49,8 +58,9 @@
                 </table>
             </div>
 
-            <div id="vista-GANTT" class="hidden text-center py-10 font-negrita-dura text-slate-300">
-                PROXIMAMENTE: INTEGRACIÓN DE CRONOGRAMA VISUAL
+            <div id="vista-GANTT" class="hidden overflow-x-auto bg-white rounded-xl border p-4">
+                <div id="ganttContainer" class="min-w-[800px]">
+                    </div>
             </div>
         </div>
     </div>
@@ -59,29 +69,24 @@
         <div class="bg-white p-8 rounded-3xl w-full max-w-sm shadow-2xl">
             <h2 class="font-negrita-dura mb-6 text-center">DETALLES DE LA TAREA</h2>
             <input type="hidden" id="taskId">
-            
             <label class="block font-negrita-dura text-slate-400 mb-1">NOMBRE DE TAREA:</label>
             <input type="text" id="taskName" class="w-full p-3 border-2 border-slate-100 rounded-xl mb-4 outline-none focus:border-blue-500">
-
             <label class="block font-negrita-dura text-slate-400 mb-1">ESTADO:</label>
             <select id="taskStatus" class="w-full p-3 border-2 border-slate-100 rounded-xl mb-4 outline-none">
                 <option value="PENDIENTE">PENDIENTE</option>
                 <option value="PROGRESO">EN PROGRESO</option>
                 <option value="TERMINADO">TERMINADO</option>
             </select>
-
             <label class="block font-negrita-dura text-slate-400 mb-1">PRIORIDAD:</label>
             <select id="taskPriority" class="w-full p-3 border-2 border-slate-100 rounded-xl mb-4 outline-none">
                 <option value="ALTA">🔴 ALTA</option>
                 <option value="MEDIA">🟡 MEDIA</option>
                 <option value="BAJA">🟢 BAJA</option>
             </select>
-
             <div class="grid grid-cols-2 gap-4 mb-6">
                 <div><label class="font-negrita-dura text-slate-400">INICIO:</label><input type="date" id="taskStart" class="w-full p-2 border-2 border-slate-100 rounded-lg"></div>
                 <div><label class="font-negrita-dura text-slate-400">FIN:</label><input type="date" id="taskEnd" class="w-full p-2 border-2 border-slate-100 rounded-lg"></div>
             </div>
-
             <div class="flex gap-2">
                 <button onclick="guardar()" class="flex-1 bg-blue-600 text-white py-3 rounded-xl font-negrita-dura shadow-lg">GUARDAR</button>
                 <button id="btnEliminar" onclick="eliminar()" class="bg-red-500 text-white px-4 rounded-xl hidden font-negrita-dura">X</button>
@@ -91,7 +96,7 @@
     </div>
 
     <script>
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz9AwG77FokRKK2nVz_0j_3hizasIKLv7sELV-FZR-yk2nEbUvFrlt5vQbhsPzbnie0kA/exec"; // PEGA AQUÍ TU URL DE APPS SCRIPT
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz9AwG77FokRKK2nVz_0j_3hizasIKLv7sELV-FZR-yk2nEbUvFrlt5vQbhsPzbnie0kA/exec"; 
         let tareas = [];
 
         async function cargar() {
@@ -99,10 +104,10 @@
             const data = await resp.json();
             tareas = data.slice(1).map(r => ({id: r[0], tarea: r[1], estado: r[2], inicio: r[3], fin: r[4], prioridad: r[5]}));
             render();
+            renderGantt();
         }
 
         function render() {
-            // Render Kanban
             ["PENDIENTE", "PROGRESO", "TERMINADO"].forEach(est => {
                 const col = document.getElementById('col-' + est);
                 col.innerHTML = "";
@@ -115,7 +120,6 @@
                 });
             });
 
-            // Render Lista
             const tabla = document.getElementById('tablaBody');
             tabla.innerHTML = tareas.map(t => `
                 <tr class="border-b hover:bg-slate-50 cursor-pointer" onclick="abrirModal('${t.id}')">
@@ -127,6 +131,60 @@
                     <td class="py-4 px-2 text-blue-500 font-negrita-dura">EDITAR</td>
                 </tr>
             `).join('');
+        }
+
+        function renderGantt() {
+            const container = document.getElementById('ganttContainer');
+            if (tareas.length === 0) {
+                container.innerHTML = "<div class='text-center p-10 text-slate-300 font-negrita-dura'>NO HAY TAREAS PARA MOSTRAR</div>";
+                return;
+            }
+
+            // Encontrar rango de fechas
+            const fechas = tareas.flatMap(t => [new Date(t.inicio), new Date(t.fin)]).filter(d => !isNaN(d));
+            const minDate = new Date(Math.min(...fechas));
+            const maxDate = new Date(Math.max(...fechas));
+            
+            // Margen de 1 día
+            minDate.setDate(minDate.getDate() - 1);
+            maxDate.setDate(maxDate.getDate() + 5);
+
+            const totalDays = Math.ceil((maxDate - minDate) / (1000 * 60 * 60 * 24));
+            const dayWidth = 40; // px por día
+
+            let html = `<div class="gantt-grid" style="grid-template-columns: 150px ${totalDays * dayWidth}px">`;
+            
+            // Header: Días
+            html += `<div class="gantt-header-cell">TAREA / FRENTE</div>`;
+            html += `<div class="flex">`;
+            for (let i = 0; i <= totalDays; i++) {
+                const d = new Date(minDate);
+                d.setDate(d.getDate() + i);
+                html += `<div class="gantt-header-cell" style="width: ${dayWidth}px; font-size: 8px !important;">${d.getDate()}/${d.getMonth()+1}</div>`;
+            }
+            html += `</div>`;
+
+            // Filas de tareas
+            tareas.forEach(t => {
+                const start = new Date(t.inicio);
+                const end = new Date(t.fin);
+                const left = Math.max(0, Math.ceil((start - minDate) / (1000 * 60 * 60 * 24)) * dayWidth);
+                const width = Math.max(dayWidth, (Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1) * dayWidth);
+                
+                const color = t.prioridad === 'ALTA' ? '#ef4444' : (t.prioridad === 'MEDIA' ? '#f59e0b' : '#10b981');
+
+                html += `<div class="gantt-row" style="grid-template-columns: 150px ${totalDays * dayWidth}px">
+                            <div class="gantt-task-name font-negrita-dura">${t.tarea}</div>
+                            <div class="gantt-timeline">
+                                <div class="gantt-bar font-negrita-dura shadow-sm" style="left: ${left}px; width: ${width}px; background: ${color}">
+                                    ${t.tarea}
+                                </div>
+                            </div>
+                         </div>`;
+            });
+
+            html += `</div>`;
+            container.innerHTML = html;
         }
 
         async function guardar() {
@@ -160,6 +218,7 @@
             document.getElementById('vista-' + v).classList.remove('hidden');
             document.getElementById('btn-' + v).classList.remove('opacity-60');
             document.getElementById('btn-' + v).classList.add('border-white');
+            if(v === 'GANTT') renderGantt();
         }
 
         function abrirModal(id = "") {
