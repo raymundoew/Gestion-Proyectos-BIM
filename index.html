@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Proyectos BIM</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        * { font-size: 11px !important; text-transform: uppercase; font-family: sans-serif; }
+        .font-negrita-dura { font-weight: 900 !important; }
+        .kanban-col { min-height: 500px; background: #f8fafc; border-radius: 15px; padding: 12px; border: 1px solid #e2e8f0; }
+        .tarea-card { background: white; padding: 12px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 10px; cursor: pointer; border-left: 4px solid #cbd5e1; }
+        .prioridad-ALTA { border-left-color: #ef4444 !important; }
+        .prioridad-MEDIA { border-left-color: #f59e0b !important; }
+        .prioridad-BAJA { border-left-color: #10b981 !important; }
+        input, select { text-transform: none !important; }
+    </style>
+</head>
+<body class="bg-slate-50 p-4 text-slate-800">
+    <div class="max-w-6xl mx-auto">
+        <div class="bg-slate-800 p-6 text-white rounded-t-3xl shadow-lg">
+            <h1 class="font-negrita-dura tracking-widest text-center mb-4">GESTOR DE PROYECTOS BIM</h1>
+            <div class="flex justify-center gap-6">
+                <button onclick="cambiarVista('KANBAN')" id="btn-KANBAN" class="font-negrita-dura pb-1 border-b-2 border-white">TABLERO KANBAN</button>
+                <button onclick="cambiarVista('GANTT')" id="btn-GANTT" class="font-negrita-dura pb-1 border-b-2 border-transparent opacity-60">DIAGRAMA GANTT</button>
+                <button onclick="cambiarVista('LISTA')" id="btn-LISTA" class="font-negrita-dura pb-1 border-b-2 border-transparent opacity-60">VISTA LISTA</button>
+            </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-b-3xl shadow-xl">
+            <button onclick="abrirModal()" class="mb-6 bg-blue-600 text-white px-6 py-3 rounded-xl font-negrita-dura hover:bg-blue-700 transition-all">+ NUEVA TAREA</button>
+
+            <div id="vista-KANBAN" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div><h2 class="font-negrita-dura mb-3 text-slate-400">PENDIENTE</h2><div id="col-PENDIENTE" class="kanban-col"></div></div>
+                <div><h2 class="font-negrita-dura mb-3 text-blue-500">EN PROGRESO</h2><div id="col-PROGRESO" class="kanban-col"></div></div>
+                <div><h2 class="font-negrita-dura mb-3 text-green-500">TERMINADO</h2><div id="col-TERMINADO" class="kanban-col"></div></div>
+            </div>
+
+            <div id="vista-LISTA" class="hidden overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead>
+                        <tr class="font-negrita-dura border-b-2 text-slate-400">
+                            <th class="py-3 px-2">TAREA</th><th class="py-3 px-2">ESTADO</th>
+                            <th class="py-3 px-2">PRIORIDAD</th><th class="py-3 px-2">INICIO</th>
+                            <th class="py-3 px-2">FIN</th><th class="py-3 px-2">ACCION</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaBody"></tbody>
+                </table>
+            </div>
+
+            <div id="vista-GANTT" class="hidden text-center py-10 font-negrita-dura text-slate-300">
+                PROXIMAMENTE: INTEGRACIÓN DE CRONOGRAMA VISUAL
+            </div>
+        </div>
+    </div>
+
+    <div id="modalTarea" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
+        <div class="bg-white p-8 rounded-3xl w-full max-w-sm shadow-2xl">
+            <h2 class="font-negrita-dura mb-6 text-center">DETALLES DE LA TAREA</h2>
+            <input type="hidden" id="taskId">
+            
+            <label class="block font-negrita-dura text-slate-400 mb-1">NOMBRE DE TAREA:</label>
+            <input type="text" id="taskName" class="w-full p-3 border-2 border-slate-100 rounded-xl mb-4 outline-none focus:border-blue-500">
+
+            <label class="block font-negrita-dura text-slate-400 mb-1">ESTADO:</label>
+            <select id="taskStatus" class="w-full p-3 border-2 border-slate-100 rounded-xl mb-4 outline-none">
+                <option value="PENDIENTE">PENDIENTE</option>
+                <option value="PROGRESO">EN PROGRESO</option>
+                <option value="TERMINADO">TERMINADO</option>
+            </select>
+
+            <label class="block font-negrita-dura text-slate-400 mb-1">PRIORIDAD:</label>
+            <select id="taskPriority" class="w-full p-3 border-2 border-slate-100 rounded-xl mb-4 outline-none">
+                <option value="ALTA">🔴 ALTA</option>
+                <option value="MEDIA">🟡 MEDIA</option>
+                <option value="BAJA">🟢 BAJA</option>
+            </select>
+
+            <div class="grid grid-cols-2 gap-4 mb-6">
+                <div><label class="font-negrita-dura text-slate-400">INICIO:</label><input type="date" id="taskStart" class="w-full p-2 border-2 border-slate-100 rounded-lg"></div>
+                <div><label class="font-negrita-dura text-slate-400">FIN:</label><input type="date" id="taskEnd" class="w-full p-2 border-2 border-slate-100 rounded-lg"></div>
+            </div>
+
+            <div class="flex gap-2">
+                <button onclick="guardar()" class="flex-1 bg-blue-600 text-white py-3 rounded-xl font-negrita-dura shadow-lg">GUARDAR</button>
+                <button id="btnEliminar" onclick="eliminar()" class="bg-red-500 text-white px-4 rounded-xl hidden font-negrita-dura">X</button>
+                <button onclick="cerrarModal()" class="bg-slate-100 text-slate-400 px-4 rounded-xl font-negrita-dura">CERRAR</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz9AwG77FokRKK2nVz_0j_3hizasIKLv7sELV-FZR-yk2nEbUvFrlt5vQbhsPzbnie0kA/exec"; // PEGA AQUÍ TU URL DE APPS SCRIPT
+        let tareas = [];
+
+        async function cargar() {
+            const resp = await fetch(SCRIPT_URL, {method: 'POST', body: JSON.stringify({accion: "LEER"})});
+            const data = await resp.json();
+            tareas = data.slice(1).map(r => ({id: r[0], tarea: r[1], estado: r[2], inicio: r[3], fin: r[4], prioridad: r[5]}));
+            render();
+        }
+
+        function render() {
+            // Render Kanban
+            ["PENDIENTE", "PROGRESO", "TERMINADO"].forEach(est => {
+                const col = document.getElementById('col-' + est);
+                col.innerHTML = "";
+                tareas.filter(t => t.estado === est).forEach(t => {
+                    col.innerHTML += `
+                        <div class="tarea-card prioridad-${t.prioridad}" onclick="abrirModal('${t.id}')">
+                            <div class="font-negrita-dura mb-1">${t.tarea}</div>
+                            <div class="text-slate-400 text-[9px]">${t.inicio} > ${t.fin}</div>
+                        </div>`;
+                });
+            });
+
+            // Render Lista
+            const tabla = document.getElementById('tablaBody');
+            tabla.innerHTML = tareas.map(t => `
+                <tr class="border-b hover:bg-slate-50 cursor-pointer" onclick="abrirModal('${t.id}')">
+                    <td class="py-4 px-2 font-negrita-dura">${t.tarea}</td>
+                    <td class="py-4 px-2">${t.estado}</td>
+                    <td class="py-4 px-2 font-negrita-dura text-center prioridad-${t.prioridad}">${t.prioridad}</td>
+                    <td class="py-4 px-2">${t.inicio}</td>
+                    <td class="py-4 px-2">${t.fin}</td>
+                    <td class="py-4 px-2 text-blue-500 font-negrita-dura">EDITAR</td>
+                </tr>
+            `).join('');
+        }
+
+        async function guardar() {
+            const payload = {
+                accion: "GUARDAR",
+                id: document.getElementById('taskId').value,
+                tarea: document.getElementById('taskName').value,
+                estado: document.getElementById('taskStatus').value,
+                prioridad: document.getElementById('taskPriority').value,
+                inicio: document.getElementById('taskStart').value,
+                fin: document.getElementById('taskEnd').value
+            };
+            await fetch(SCRIPT_URL, {method: 'POST', body: JSON.stringify(payload)});
+            cerrarModal();
+            cargar();
+        }
+
+        async function eliminar() {
+            if(!confirm("¿ELIMINAR TAREA?")) return;
+            await fetch(SCRIPT_URL, {method: 'POST', body: JSON.stringify({accion: "ELIMINAR", id: document.getElementById('taskId').value})});
+            cerrarModal();
+            cargar();
+        }
+
+        function cambiarVista(v) {
+            ["KANBAN", "GANTT", "LISTA"].forEach(x => {
+                document.getElementById('vista-' + x).classList.add('hidden');
+                document.getElementById('btn-' + x).classList.add('opacity-60');
+                document.getElementById('btn-' + x).classList.remove('border-white');
+            });
+            document.getElementById('vista-' + v).classList.remove('hidden');
+            document.getElementById('btn-' + v).classList.remove('opacity-60');
+            document.getElementById('btn-' + v).classList.add('border-white');
+        }
+
+        function abrirModal(id = "") {
+            const t = tareas.find(x => x.id == id) || {id: "", tarea: "", estado: "PENDIENTE", prioridad: "MEDIA", inicio: "", fin: ""};
+            document.getElementById('taskId').value = t.id;
+            document.getElementById('taskName').value = t.tarea;
+            document.getElementById('taskStatus').value = t.estado;
+            document.getElementById('taskPriority').value = t.prioridad;
+            document.getElementById('taskStart').value = t.inicio;
+            document.getElementById('taskEnd').value = t.fin;
+            document.getElementById('btnEliminar').classList.toggle('hidden', !id);
+            document.getElementById('modalTarea').classList.remove('hidden');
+        }
+
+        function cerrarModal() { document.getElementById('modalTarea').classList.add('hidden'); }
+
+        cargar();
+    </script>
+</body>
+</html>
