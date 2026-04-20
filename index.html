@@ -3,146 +3,184 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BIM Manager Pro - Raymundo</title>
+    <title>BIM Manager Pro - Estilo Notion</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        * { font-size: 11px !important; text-transform: uppercase; font-family: sans-serif; }
-        .font-negrita-dura { font-weight: 900 !important; }
-        .kanban-col { min-height: 450px; background: #f8fafc; border-radius: 15px; padding: 12px; border: 1px solid #e2e8f0; }
-        .tarea-card { background: white; padding: 12px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 10px; cursor: pointer; border-left: 4px solid #cbd5e1; }
-        .prioridad-ALTA { border-left-color: #ef4444 !important; color: #ef4444; }
-        .prioridad-MEDIA { border-left-color: #f59e0b !important; color: #b45309; }
-        .prioridad-BAJA { border-left-color: #10b981 !important; color: #047857; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         
-        /* Cronograma Simétrico */
-        .cronograma-wrapper { overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 8px; background: white; }
-        .cronograma-table { border-collapse: collapse; table-layout: fixed; min-width: 100%; }
-        .cronograma-table th, .cronograma-table td { border: 1px solid #e2e8f0; text-align: center; height: 32px; }
-        .header-mes { background: #1e293b; color: white; font-weight: 900; }
-        .header-dia { background: #f1f5f9; width: 30px !important; }
-        .col-nombre { width: 150px !important; text-align: left !important; padding-left: 8px !important; background: white; position: sticky; left: 0; z-index: 10; border-right: 2px solid #e2e8f0 !important; white-space: nowrap; overflow: hidden; }
-        .estado-terminado { opacity: 0.25; filter: grayscale(60%); }
-        .celda-activa-alta { background-color: #ef4444; }
-        .celda-activa-media { background-color: #f59e0b; }
-        .celda-activa-baja { background-color: #10b981; }
+        body { font-family: 'Inter', sans-serif; background-color: #ffffff; color: #37352f; }
+        * { font-size: 13px; }
 
-        .preview-img { width: 100%; height: 150px; object-fit: cover; border-radius: 15px; margin-top: 10px; border: 3px solid #10b981; }
-        input, select { text-transform: none !important; }
+        .font-notion-title { font-size: 24px !important; font-weight: 700; color: #37352f; letter-spacing: -0.02em; }
+        .label-gray { color: rgba(55, 53, 47, 0.65); font-weight: 500; width: 100px; display: inline-block; }
+        
+        /* Badges estilo Notion */
+        .badge { padding: 2px 8px; border-radius: 4px; font-weight: 500; font-size: 12px !important; display: inline-flex; align-items: center; }
+        .bg-notion-gray { background: #f1f1f0; color: #37352f; }
+        .bg-notion-blue { background: #e7f3f8; color: #096ea0; }
+        .bg-notion-green { background: #eaf3db; color: #4d7c0f; }
+        .bg-notion-yellow { background: #fdf3d8; color: #cb912f; }
+        .bg-notion-red { background: #fdecc8; color: #c0392b; }
+
+        .kanban-col { min-height: 70vh; background: #ffffff; padding: 8px; }
+        .tarea-card { 
+            border: 1px solid #e9e9e7; border-radius: 8px; padding: 12px; margin-bottom: 8px;
+            box-shadow: 0 1px 2px rgba(15, 15, 15, 0.05); cursor: pointer; transition: background 0.1s;
+        }
+        .tarea-card:hover { background: #f7f7f5; }
+
+        /* Cronograma */
+        .crono-table { border-collapse: collapse; table-layout: fixed; width: 100%; }
+        .crono-table th, .crono-table td { border: 1px solid #edeceb; height: 34px; text-align: center; }
+        .crono-header-day { background: #f7f7f5; color: #91918e; font-size: 11px !important; width: 32px; }
+        .crono-sidebar { width: 220px; text-align: left; padding: 0 12px; position: sticky; left: 0; background: white; z-index: 10; border-right: 2px solid #edeceb; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        
+        /* Barras Cronograma */
+        .bar { height: 20px; border-radius: 3px; margin: 0 2px; }
+        .bar-alta { background: #fb7185; }
+        .bar-media { background: #fbbf24; }
+        .bar-baja { background: #34d399; }
+        .bar-done { opacity: 0.3; }
+
+        input, select { border: 1px solid #edeceb; border-radius: 4px; padding: 4px 8px; outline: none; }
+        input:focus { background: #f7f7f5; }
     </style>
 </head>
-<body class="bg-slate-50 p-4">
-    <div class="max-w-7xl mx-auto">
-        <div class="bg-slate-800 p-6 text-white rounded-t-3xl shadow-lg">
-            <h1 class="font-negrita-dura tracking-widest text-center mb-4">GESTOR DE PROYECTOS BIM</h1>
-            <div class="flex justify-center gap-6">
-                <button onclick="cambiarVista('KANBAN')" id="btn-KANBAN" class="font-negrita-dura pb-1 border-b-2 border-white">TABLERO</button>
-                <button onclick="cambiarVista('CRONO')" id="btn-CRONO" class="font-negrita-dura pb-1 border-b-2 border-transparent opacity-60">CRONOGRAMA</button>
+<body class="p-8">
+    <div class="max-w-6xl mx-auto">
+        <div class="flex items-center gap-3 mb-2">
+            <span style="font-size: 40px;">📂</span>
+            <h1 class="font-notion-title">Gestión de Proyectos BIM</h1>
+        </div>
+        
+        <div class="flex gap-4 mb-8 border-b border-gray-200">
+            <button onclick="cambiarVista('KANBAN')" id="btn-KANBAN" class="pb-2 border-b-2 border-black font-semibold">Tablero</button>
+            <button onclick="cambiarVista('CRONO')" id="btn-CRONO" class="pb-2 border-b-2 border-transparent text-gray-400">Cronograma</button>
+        </div>
+
+        <button onclick="abrirModal()" class="mb-6 text-gray-500 hover:bg-gray-100 px-3 py-1 rounded transition-all">＋ Nuevo</button>
+
+        <div id="vista-KANBAN" class="grid grid-cols-3 gap-8">
+            <div>
+                <div class="flex items-center gap-2 mb-4"><span class="badge bg-notion-gray">Backlog</span> <span id="count-PENDIENTE" class="text-gray-400">0</span></div>
+                <div id="col-PENDIENTE" class="kanban-col"></div>
+            </div>
+            <div>
+                <div class="flex items-center gap-2 mb-4"><span class="badge bg-notion-blue">En progreso</span> <span id="count-PROGRESO" class="text-gray-400">0</span></div>
+                <div id="col-PROGRESO" class="kanban-col"></div>
+            </div>
+            <div>
+                <div class="flex items-center gap-2 mb-4"><span class="badge bg-notion-green">Hecho</span> <span id="count-TERMINADO" class="text-gray-400">0</span></div>
+                <div id="col-TERMINADO" class="kanban-col"></div>
             </div>
         </div>
 
-        <div class="bg-white p-6 rounded-b-3xl shadow-xl">
-            <button onclick="abrirModal()" class="mb-6 bg-blue-600 text-white px-6 py-3 rounded-xl font-negrita-dura shadow-lg">+ NUEVA ACTIVIDAD</button>
-            
-            <div id="vista-KANBAN">
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div><h2 class="font-negrita-dura mb-3 text-slate-400 text-center">PENDIENTE</h2><div id="col-PENDIENTE" class="kanban-col"></div></div>
-                    <div><h2 class="font-negrita-dura mb-3 text-blue-500 text-center">EN PROGRESO</h2><div id="col-PROGRESO" class="kanban-col"></div></div>
-                    <div><h2 class="font-negrita-dura mb-3 text-green-500 text-center">TERMINADO</h2><div id="col-TERMINADO" class="kanban-col"></div></div>
-                </div>
-            </div>
-
-            <div id="vista-CRONO" class="hidden">
-                <div class="cronograma-wrapper" id="cronogramaContainer"></div>
-            </div>
+        <div id="vista-CRONO" class="hidden overflow-x-auto border border-gray-200 rounded-lg">
+            <div id="cronogramaContainer"></div>
         </div>
     </div>
 
-    <div id="modalTarea" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50 overflow-y-auto">
-        <div class="bg-white p-8 rounded-3xl w-full max-w-sm my-auto shadow-2xl">
-            <h2 class="font-negrita-dura mb-6 text-center text-slate-600">DETALLES</h2>
-            <input type="hidden" id="taskId">
-            <input type="text" id="taskName" maxlength="20" class="w-full p-3 border-2 rounded-xl mb-4 font-negrita-dura outline-none" placeholder="NOMBRE (MÁX 20)">
+    <div id="modalTarea" class="fixed inset-0 bg-black/20 backdrop-blur-[1px] hidden flex items-center justify-center z-50">
+        <div class="bg-white w-full max-w-xl p-10 rounded-lg shadow-2xl relative">
+            <button onclick="cerrarModal()" class="absolute top-4 right-4 text-gray-400 hover:text-black text-xl">✕</button>
             
-            <select id="taskStatus" onchange="toggleFotoSection()" class="w-full p-3 border-2 rounded-xl mb-4 font-negrita-dura">
-                <option value="PENDIENTE">PENDIENTE</option>
-                <option value="PROGRESO">EN PROGRESO</option>
-                <option value="TERMINADO">TERMINADO</option>
-            </select>
-
-            <select id="taskPriority" class="w-full p-3 border-2 rounded-xl mb-4 font-negrita-dura">
-                <option value="ALTA">ALTA</option><option value="MEDIA">MEDIA</option><option value="BAJA">BAJA</option>
-            </select>
-
-            <div class="grid grid-cols-2 gap-4 mb-4">
-                <input type="date" id="taskStart" class="w-full p-2 border-2 rounded-lg"><input type="date" id="taskEnd" class="w-full p-2 border-2 rounded-lg">
+            <input type="hidden" id="taskId">
+            <input type="text" id="taskName" maxlength="20" placeholder="Sin título" class="w-full text-3xl font-bold border-none p-0 mb-6 focus:ring-0 placeholder-gray-200">
+            
+            <div class="space-y-4">
+                <div class="flex items-center">
+                    <span class="label-gray">📋 Estado</span>
+                    <select id="taskStatus" class="bg-transparent border-none hover:bg-gray-100 cursor-pointer">
+                        <option value="PENDIENTE">Backlog</option>
+                        <option value="PROGRESO">En progreso</option>
+                        <option value="TERMINADO">Hecho</option>
+                    </select>
+                </div>
+                <div class="flex items-center">
+                    <span class="label-gray">⚡ Prioridad</span>
+                    <select id="taskPriority" class="bg-transparent border-none hover:bg-gray-100 cursor-pointer">
+                        <option value="ALTA">Alta</option>
+                        <option value="MEDIA">Media</option>
+                        <option value="BAJA">Baja</option>
+                    </select>
+                </div>
+                <div class="flex items-center">
+                    <span class="label-gray">🗓️ Inicio</span>
+                    <input type="date" id="taskStart" class="border-none hover:bg-gray-100">
+                </div>
+                <div class="flex items-center border-b pb-4">
+                    <span class="label-gray">🏁 Fin</span>
+                    <input type="date" id="taskEnd" class="border-none hover:bg-gray-100">
+                </div>
             </div>
 
-            <div id="fotoSection" class="hidden border-t border-dashed pt-4 mb-4">
-                <label class="font-negrita-dura text-slate-500">URL DE EVIDENCIA (DRIVE/IMG):</label>
-                <input type="text" id="taskFotoUrl" placeholder="PEGAR LINK DE FOTO AQUÍ" class="w-full p-3 border-2 rounded-xl mt-2 outline-none">
-                <div id="fotoPreviewContainer"></div>
-            </div>
-
-            <div class="flex gap-2">
-                <button onclick="guardar()" id="btnGuardar" class="flex-1 bg-blue-600 text-white py-3 rounded-xl font-negrita-dura shadow-md">GUARDAR</button>
-                <button onclick="cerrarModal()" class="bg-slate-100 text-slate-400 px-4 rounded-xl font-negrita-dura">CERRAR</button>
+            <div class="mt-8 flex justify-between">
+                <button onclick="guardar()" id="btnGuardar" class="bg-[#2383e2] text-white px-4 py-1.5 rounded font-medium shadow-sm hover:bg-[#0077d4]">Guardar</button>
+                <button onclick="eliminar()" id="btnEliminar" class="text-red-400 hover:bg-red-50 px-2 py-1 rounded hidden">Eliminar</button>
             </div>
         </div>
     </div>
 
     <script>
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz9AwG77FokRKK2nVz_0j_3hizasIKLv7sELV-FZR-yk2nEbUvFrlt5vQbhsPzbnie0kA/exec"; 
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz9AwG77FokRKK2nVz_0j_3hizasIKLv7sELV-FZR-yk2nEbUvFrlt5vQbhsPzbnie0kA/exec";
         let tareas = [];
 
         async function cargar() {
-            try {
-                const resp = await fetch(SCRIPT_URL, {method: 'POST', body: JSON.stringify({accion: "LEER"})});
-                const data = await resp.json();
-                tareas = data.slice(1).map(r => ({id:r[0], tarea:r[1], estado:r[2], inicio:r[3], fin:r[4], prioridad:r[5], fotoUrl:r[6]}));
-                render();
-                if(!document.getElementById('vista-CRONO').classList.contains('hidden')) renderCronograma();
-            } catch(e) { console.error("Error al cargar datos"); }
+            const resp = await fetch(SCRIPT_URL, {method: 'POST', body: JSON.stringify({accion: "LEER"})});
+            const data = await resp.json();
+            tareas = data.slice(1).map(r => ({id:r[0], tarea:r[1], estado:r[2], inicio:r[3], fin:r[4], prioridad:r[5]}));
+            render();
+            if(!document.getElementById('vista-CRONO').classList.contains('hidden')) renderCronograma();
         }
 
         function render() {
+            const counts = {PENDIENTE: 0, PROGRESO: 0, TERMINADO: 0};
             ["PENDIENTE", "PROGRESO", "TERMINADO"].forEach(est => {
-                const col = document.getElementById('col-' + est); col.innerHTML = "";
-                tareas.filter(t => t.estado === est).forEach(t => {
-                    col.innerHTML += `<div class="tarea-card prioridad-${t.prioridad}" onclick="abrirModal('${t.id}')"><div class="font-negrita-dura mb-1">${t.tarea}</div><div class="text-slate-400" style="font-size:9px !important;">${t.inicio} > ${t.fin}</div></div>`;
+                const col = document.getElementById('col-' + est);
+                col.innerHTML = "";
+                const filtradas = tareas.filter(t => t.estado === est);
+                counts[est] = filtradas.length;
+                filtradas.forEach(t => {
+                    const pClass = t.prioridad === 'ALTA' ? 'bg-notion-red' : (t.prioridad === 'MEDIA' ? 'bg-notion-yellow' : 'bg-notion-green');
+                    col.innerHTML += `
+                        <div class="tarea-card" onclick="abrirModal('${t.id}')">
+                            <div class="font-semibold mb-2">${t.tarea}</div>
+                            <div class="flex items-center justify-between">
+                                <span class="badge ${pClass}">${t.prioridad}</span>
+                                <span class="text-gray-400 text-[10px]">${t.inicio}</span>
+                            </div>
+                        </div>`;
                 });
             });
+            document.getElementById('count-PENDIENTE').innerText = counts.PENDIENTE;
+            document.getElementById('count-PROGRESO').innerText = counts.PROGRESO;
+            document.getElementById('count-TERMINADO').innerText = counts.TERMINADO;
         }
 
         function renderCronograma() {
             const container = document.getElementById('cronogramaContainer');
             if (tareas.length === 0) return;
             
-            // Lógica de fechas corregida
-            let f = tareas.flatMap(t => [new Date(t.inicio + "T00:00:00"), new Date(t.fin + "T00:00:00")]).filter(d => !isNaN(d));
-            if(f.length === 0) return;
+            let fechas = tareas.flatMap(t => [new Date(t.inicio + "T00:00:00"), new Date(t.fin + "T00:00:00")]).filter(d => !isNaN(d));
+            let min = new Date(Math.min(...fechas)); min.setDate(min.getDate() - 2);
+            let max = new Date(Math.max(...fechas)); max.setDate(max.getDate() + 5);
             
-            let min = new Date(Math.min(...f)); min.setDate(min.getDate() - 1);
-            let max = new Date(Math.max(...f)); max.setDate(max.getDate() + 5);
-            
-            let lista = []; let cur = new Date(min);
-            while (cur <= max) { lista.push(new Date(cur)); cur.setDate(cur.getDate() + 1); }
+            let dias = []; let cur = new Date(min);
+            while (cur <= max) { dias.push(new Date(cur)); cur.setDate(cur.getDate() + 1); }
 
-            let html = '<table class="cronograma-table"><thead><tr><th class="col-nombre header-mes">ACTIVIDAD</th><th class="col-duracion header-mes" style="width:40px">D</th>';
-            let meses = [], mesA = -1, span = 0;
-            lista.forEach(d => { if (d.getMonth() !== mesA) { if (mesA !== -1) meses.push({n: obtenerMes(mesA), s: span}); mesA = d.getMonth(); span = 1; } else span++; });
-            meses.push({n: obtenerMes(mesA), s: span});
-            meses.forEach(m => html += `<th colspan="${m.s}" class="header-mes" style="border-left:1px solid #475569">${m.n}</th>`);
-            
-            html += '</tr><tr><th class="col-nombre"></th><th class="col-duracion"></th>';
-            lista.forEach(d => html += `<th class="header-dia ${d.getDay() === 0 || d.getDay() === 6 ? 'bg-slate-200' : ''}">${d.getDate()}</th>`);
+            let html = '<table class="crono-table"><thead><tr><th class="crono-sidebar">Actividad</th>';
+            dias.forEach(d => html += `<th class="crono-header-day">${d.getDate()}</th>`);
             html += '</tr></thead><tbody>';
 
             tareas.forEach(t => {
-                const i = new Date(t.inicio + "T00:00:00"), f = new Date(t.fin + "T00:00:00"), dur = Math.ceil((f-i)/(864e5))+1;
-                html += `<tr><td class="col-nombre font-negrita-dura ${t.estado === "TERMINADO" ? 'text-slate-300' : ''}">${t.tarea}</td><td style="width:40px">${dur}</td>`;
-                lista.forEach(d => {
-                    let c = (d >= i && d <= f) ? `celda-activa-${t.prioridad.toLowerCase()} ${t.estado === "TERMINADO" ? 'estado-terminado' : ''}` : "";
-                    html += `<td class="${c}"></td>`;
+                const i = new Date(t.inicio + "T00:00:00"), f = new Date(t.fin + "T00:00:00"), dur = Math.ceil((f-i)/864e5)+1;
+                const pColor = t.prioridad === 'ALTA' ? 'bar-alta' : (t.prioridad === 'MEDIA' ? 'bar-media' : 'bar-baja');
+                const isDone = t.estado === 'TERMINADO' ? 'bar-done' : '';
+
+                html += `<tr><td class="crono-sidebar font-medium">${t.tarea}</td>`;
+                dias.forEach(d => {
+                    const active = (d >= i && d <= f) ? `<div class="bar ${pColor} ${isDone}"></div>` : '';
+                    html += `<td>${active}</td>`;
                 });
                 html += '</tr>';
             });
@@ -150,55 +188,41 @@
         }
 
         async function guardar() {
-            const btn = document.getElementById('btnGuardar');
-            btn.innerText = "GUARDANDO..."; btn.disabled = true;
+            const btn = document.getElementById('btnGuardar'); btn.innerText = "Cargando...";
             const payload = {
                 accion: "GUARDAR",
                 id: document.getElementById('taskId').value || Date.now().toString(),
-                tarea: document.getElementById('taskName').value,
+                tarea: document.getElementById('taskName').value || "Sin título",
                 estado: document.getElementById('taskStatus').value,
                 prioridad: document.getElementById('taskPriority').value,
                 inicio: document.getElementById('taskStart').value,
-                fin: document.getElementById('taskEnd').value,
-                fotoUrl: document.getElementById('taskFotoUrl').value // Guardamos el link directamente
+                fin: document.getElementById('taskEnd').value
             };
-            try {
-                await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) });
-                alert("✅ GUARDADO");
-            } catch (e) { alert("❌ ERROR"); }
-            btn.innerText = "GUARDAR"; btn.disabled = false;
-            cerrarModal(); setTimeout(cargar, 1500);
+            await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(payload) });
+            cerrarModal(); cargar();
         }
 
         function abrirModal(id = "") {
-            const t = tareas.find(x => x.id.toString() === id) || {id:"", tarea:"", estado:"PENDIENTE", prioridad:"MEDIA", inicio:"", fin:"", fotoUrl:""};
+            const t = tareas.find(x => x.id.toString() === id) || {id:"", tarea:"", estado:"PENDIENTE", prioridad:"MEDIA", inicio:"", fin:""};
             document.getElementById('taskId').value = t.id;
             document.getElementById('taskName').value = t.tarea;
             document.getElementById('taskStatus').value = t.estado;
             document.getElementById('taskPriority').value = t.prioridad;
             document.getElementById('taskStart').value = t.inicio;
             document.getElementById('taskEnd').value = t.fin;
-            document.getElementById('taskFotoUrl').value = t.fotoUrl;
-
-            const preview = document.getElementById('fotoPreviewContainer');
-            if (t.fotoUrl) {
-                preview.innerHTML = `<div class="mt-4"><a href="${t.fotoUrl}" target="_blank"><img src="${t.fotoUrl}" class="preview-img" title="VER ORIGINAL"></a></div>`;
-            } else { preview.innerHTML = ""; }
-            
-            toggleFotoSection();
+            document.getElementById('btnEliminar').classList.toggle('hidden', !t.id);
             document.getElementById('modalTarea').classList.remove('hidden');
         }
 
-        function obtenerMes(n) { return ["ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SET", "OCT", "NOV", "DIC"][n]; }
-        function cerrarModal() { document.getElementById('modalTarea').classList.add('hidden'); }
-        function toggleFotoSection() { document.getElementById('fotoSection').classList.toggle('hidden', document.getElementById('taskStatus').value !== 'TERMINADO'); }
         function cambiarVista(v) {
             document.getElementById('vista-KANBAN').classList.toggle('hidden', v !== 'KANBAN');
             document.getElementById('vista-CRONO').classList.toggle('hidden', v !== 'CRONO');
-            document.getElementById('btn-KANBAN').classList.toggle('opacity-60', v !== 'KANBAN');
-            document.getElementById('btn-CRONO').classList.toggle('opacity-60', v !== 'CRONO');
+            document.getElementById('btn-KANBAN').className = v === 'KANBAN' ? 'pb-2 border-b-2 border-black font-semibold' : 'pb-2 border-b-2 border-transparent text-gray-400';
+            document.getElementById('btn-CRONO').className = v === 'CRONO' ? 'pb-2 border-b-2 border-black font-semibold' : 'pb-2 border-b-2 border-transparent text-gray-400';
             if(v === 'CRONO') renderCronograma();
         }
+
+        function cerrarModal() { document.getElementById('modalTarea').classList.add('hidden'); }
         cargar();
     </script>
 </body>
