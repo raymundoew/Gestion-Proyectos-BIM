@@ -6,33 +6,38 @@
     <title>Gestión de Proyectos BIM</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Fuente 11px uniforme para todo el documento */
+        /* Uniformidad de fuente 11px y negritas duras */
         * { font-size: 11px !important; text-transform: uppercase; font-family: sans-serif; }
         .font-negrita-dura { font-weight: 900 !important; }
         
-        /* Contenedores Principales */
+        /* Contenedores */
         .kanban-col { min-height: 500px; background: #f8fafc; border-radius: 15px; padding: 12px; border: 1px solid #e2e8f0; }
         .tarea-card { background: white; padding: 12px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 10px; cursor: pointer; border-left: 4px solid #cbd5e1; }
         
-        /* Prioridades */
+        /* Prioridades limpias */
         .prioridad-ALTA { border-left-color: #ef4444 !important; color: #ef4444; }
         .prioridad-MEDIA { border-left-color: #f59e0b !important; color: #b45309; }
         .prioridad-BAJA { border-left-color: #10b981 !important; color: #047857; }
 
-        /* Estilos del Cronograma Diario */
+        /* Cronograma con celdas uniformes */
         .cronograma-wrapper { overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 8px; }
-        .cronograma-table { border-collapse: collapse; min-width: 100%; table-layout: fixed; }
-        .cronograma-table th, .cronograma-table td { border: 1px solid #e2e8f0; text-align: center; height: 30px; padding: 0; }
-        .header-mes { background: #1e293b; color: white; font-weight: 900; }
-        .header-dia { background: #f1f5f9; font-size: 9px !important; width: 30px; }
-        .col-nombre { width: 180px; text-align: left !important; padding-left: 10px !important; background: white; position: sticky; left: 0; z-index: 10; border-right: 2px solid #e2e8f0 !important; }
-        .col-duracion { width: 60px; background: #f8fafc; font-weight: 900; }
+        .cronograma-table { border-collapse: collapse; min-width: 100%; table-layout: fixed; } /* Layout fijo para simetría */
+        .cronograma-table th, .cronograma-table td { border: 1px solid #e2e8f0; text-align: center; height: 32px; padding: 0; overflow: hidden; }
         
-        /* Celdas de Actividad */
-        .celda-activa { background-color: #3b82f6; position: relative; }
+        .header-mes { background: #1e293b; color: white; font-weight: 900; height: 25px; }
+        .header-dia { background: #f1f5f9; width: 30px !important; min-width: 30px !important; max-width: 30px !important; }
+        
+        .col-nombre { width: 160px !important; min-width: 160px !important; text-align: left !important; padding-left: 8px !important; background: white; position: sticky; left: 0; z-index: 10; border-right: 2px solid #e2e8f0 !important; white-space: nowrap; }
+        .col-duracion { width: 50px !important; min-width: 50px !important; background: #f8fafc; font-weight: 900; }
+        
+        /* Estados en Cronograma */
+        .celda-activa { position: relative; transition: opacity 0.3s; }
         .celda-activa-alta { background-color: #ef4444; }
         .celda-activa-media { background-color: #f59e0b; }
         .celda-activa-baja { background-color: #10b981; }
+        
+        /* Efecto para Terminados: Opacidad baja */
+        .estado-terminado { opacity: 0.25; filter: grayscale(50%); }
         
         input, select { text-transform: none !important; }
     </style>
@@ -49,7 +54,7 @@
         </div>
 
         <div class="bg-white p-6 rounded-b-3xl shadow-xl">
-            <button onclick="abrirModal()" class="mb-6 bg-blue-600 text-white px-6 py-3 rounded-xl font-negrita-dura shadow-lg">+ NUEVA TAREA / ACTIVIDAD</button>
+            <button onclick="abrirModal()" class="mb-6 bg-blue-600 text-white px-6 py-3 rounded-xl font-negrita-dura shadow-lg">+ NUEVA ACTIVIDAD</button>
 
             <div id="vista-KANBAN" class="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div><h2 class="font-negrita-dura mb-3 text-slate-400">PENDIENTE</h2><div id="col-PENDIENTE" class="kanban-col"></div></div>
@@ -71,34 +76,38 @@
             </div>
 
             <div id="vista-CRONO" class="hidden">
-                <div class="cronograma-wrapper" id="cronogramaContainer">
-                    </div>
+                <div class="cronograma-wrapper" id="cronogramaContainer"></div>
             </div>
         </div>
     </div>
 
     <div id="modalTarea" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
         <div class="bg-white p-8 rounded-3xl w-full max-w-sm shadow-2xl">
-            <h2 class="font-negrita-dura mb-6 text-center">DETALLES DE ACTIVIDAD</h2>
+            <h2 class="font-negrita-dura mb-6 text-center text-slate-600">DETALLES DE ACTIVIDAD</h2>
             <input type="hidden" id="taskId">
-            <label class="block font-negrita-dura text-slate-400 mb-1">NOMBRE:</label>
-            <input type="text" id="taskName" class="w-full p-3 border-2 border-slate-100 rounded-xl mb-4 outline-none">
+            
+            <label class="block font-negrita-dura text-slate-400 mb-1">NOMBRE (MÁX 20 CARACTERES):</label>
+            <input type="text" id="taskName" maxlength="20" placeholder="EJ: VACIADO DE LOSA" class="w-full p-3 border-2 border-slate-100 rounded-xl mb-4 outline-none focus:border-blue-500 font-negrita-dura">
+            
             <label class="block font-negrita-dura text-slate-400 mb-1">ESTADO:</label>
-            <select id="taskStatus" class="w-full p-3 border-2 border-slate-100 rounded-xl mb-4 outline-none">
+            <select id="taskStatus" class="w-full p-3 border-2 border-slate-100 rounded-xl mb-4 outline-none font-negrita-dura">
                 <option value="PENDIENTE">PENDIENTE</option>
                 <option value="PROGRESO">EN PROGRESO</option>
                 <option value="TERMINADO">TERMINADO</option>
             </select>
+            
             <label class="block font-negrita-dura text-slate-400 mb-1">PRIORIDAD:</label>
-            <select id="taskPriority" class="w-full p-3 border-2 border-slate-100 rounded-xl mb-4 outline-none">
-                <option value="ALTA">ALTA (ROJO)</option>
-                <option value="MEDIA">MEDIA (AMARILLO)</option>
-                <option value="BAJA">BAJA (VERDE)</option>
+            <select id="taskPriority" class="w-full p-3 border-2 border-slate-100 rounded-xl mb-4 outline-none font-negrita-dura">
+                <option value="ALTA">ALTA</option>
+                <option value="MEDIA">MEDIA</option>
+                <option value="BAJA">BAJA</option>
             </select>
+            
             <div class="grid grid-cols-2 gap-4 mb-6">
-                <div><label class="font-negrita-dura text-slate-400">FECHA INICIO:</label><input type="date" id="taskStart" class="w-full p-2 border-2 border-slate-100 rounded-lg"></div>
-                <div><label class="font-negrita-dura text-slate-400">FECHA FIN:</label><input type="date" id="taskEnd" class="w-full p-2 border-2 border-slate-100 rounded-lg"></div>
+                <div><label class="font-negrita-dura text-slate-400">INICIO:</label><input type="date" id="taskStart" class="w-full p-2 border-2 border-slate-100 rounded-lg"></div>
+                <div><label class="font-negrita-dura text-slate-400">FIN:</label><input type="date" id="taskEnd" class="w-full p-2 border-2 border-slate-100 rounded-lg"></div>
             </div>
+            
             <div class="flex gap-2">
                 <button onclick="guardar()" class="flex-1 bg-blue-600 text-white py-3 rounded-xl font-negrita-dura shadow-lg">GUARDAR</button>
                 <button id="btnEliminar" onclick="eliminar()" class="bg-red-500 text-white px-4 rounded-xl hidden font-negrita-dura">X</button>
@@ -122,18 +131,15 @@
         function renderCronograma() {
             const container = document.getElementById('cronogramaContainer');
             if (tareas.length === 0) {
-                container.innerHTML = "<div class='p-10 text-center font-negrita-dura'>NO HAY ACTIVIDADES MAPEADAS</div>";
+                container.innerHTML = "<div class='p-10 text-center font-negrita-dura'>SIN DATOS</div>";
                 return;
             }
 
-            // Calcular rango de fechas
             let fechas = tareas.flatMap(t => [new Date(t.inicio + "T00:00:00"), new Date(t.fin + "T00:00:00")]).filter(d => !isNaN(d));
             let minDate = new Date(Math.min(...fechas));
             let maxDate = new Date(Math.max(...fechas));
-            
-            // Margen para ver días antes y después
-            minDate.setDate(minDate.getDate() - 2);
-            maxDate.setDate(maxDate.getDate() + 5);
+            minDate.setDate(minDate.getDate() - 1);
+            maxDate.setDate(maxDate.getDate() + 3);
 
             let listaDias = [];
             let current = new Date(minDate);
@@ -142,82 +148,64 @@
                 current.setDate(current.getDate() + 1);
             }
 
-            let html = `<table class="cronograma-table"><thead>`;
+            let html = `<table class="cronograma-table"><thead><tr><th class="col-nombre header-mes">ACTIVIDAD (MÁX 20)</th><th class="col-duracion header-mes">DÍAS</th>`;
             
-            // Fila de Meses
-            html += `<tr><th class="col-nombre header-mes">ACTIVIDAD</th><th class="col-duracion header-mes">DÍAS</th>`;
-            let mesActual = -1;
-            let spanMes = 0;
             let mesesHeads = [];
-            
+            let mesActual = -1, spanMes = 0;
             listaDias.forEach(d => {
                 if (d.getMonth() !== mesActual) {
                     if (mesActual !== -1) mesesHeads.push({nombre: obtenerMes(mesActual), span: spanMes});
-                    mesActual = d.getMonth();
-                    spanMes = 1;
-                } else {
-                    spanMes++;
-                }
+                    mesActual = d.getMonth(); spanMes = 1;
+                } else spanMes++;
             });
             mesesHeads.push({nombre: obtenerMes(mesActual), span: spanMes});
+            mesesHeads.forEach(m => html += `<th colspan="${m.span}" class="header-mes" style="border-left:1px solid #475569">${m.nombre}</th>`);
+            html += `</tr><tr><th class="col-nombre"></th><th class="col-duracion"></th>`;
             
-            mesesHeads.forEach(m => {
-                html += `<th colspan="${m.span}" class="header-mes" style="border-left: 1px solid white">${m.nombre}</th>`;
-            });
-            html += `</tr>`;
-
-            // Fila de Días (Números)
-            html += `<tr><th class="col-nombre"></th><th class="col-duracion">TOTAL</th>`;
             listaDias.forEach(d => {
                 const esFinde = d.getDay() === 0 || d.getDay() === 6;
                 html += `<th class="header-dia ${esFinde ? 'bg-slate-200' : ''}">${d.getDate()}</th>`;
             });
             html += `</tr></thead><tbody>`;
 
-            // Filas de Actividades
             tareas.forEach(t => {
                 const inicioAct = new Date(t.inicio + "T00:00:00");
                 const finAct = new Date(t.fin + "T00:00:00");
                 const duracion = Math.ceil((finAct - inicioAct) / (1000 * 60 * 60 * 24)) + 1;
-                
-                html += `<tr><td class="col-nombre font-negrita-dura">${t.tarea}</td>`;
-                html += `<td class="col-duracion">${duracion} D</td>`;
+                const isTerminado = t.estado === "TERMINADO";
+
+                html += `<tr><td class="col-nombre font-negrita-dura ${isTerminado ? 'text-slate-300' : ''}">${t.tarea}</td>`;
+                html += `<td class="col-duracion ${isTerminado ? 'text-slate-300' : ''}">${duracion}D</td>`;
                 
                 listaDias.forEach(d => {
                     let claseActiva = "";
                     if (d >= inicioAct && d <= finAct) {
                         claseActiva = `celda-activa celda-activa-${t.prioridad.toLowerCase()}`;
+                        if (isTerminado) claseActiva += " estado-terminado";
                     }
                     const esFinde = d.getDay() === 0 || d.getDay() === 6;
                     html += `<td class="${claseActiva} ${esFinde && !claseActiva ? 'bg-slate-50' : ''}"></td>`;
                 });
                 html += `</tr>`;
             });
-
             html += `</tbody></table>`;
             container.innerHTML = html;
         }
 
-        function obtenerMes(num) {
-            const meses = ["ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SET", "OCT", "NOV", "DIC"];
-            return meses[num];
-        }
+        function obtenerMes(n) { return ["ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SET", "OCT", "NOV", "DIC"][n]; }
 
         function render() {
             ["PENDIENTE", "PROGRESO", "TERMINADO"].forEach(est => {
                 const col = document.getElementById('col-' + est);
                 col.innerHTML = "";
                 tareas.filter(t => t.estado === est).forEach(t => {
-                    col.innerHTML += `
-                        <div class="tarea-card prioridad-${t.prioridad}" onclick="abrirModal('${t.id}')">
-                            <div class="font-negrita-dura mb-1">${t.tarea}</div>
-                            <div class="text-slate-400 text-[9px]">${t.inicio} AL ${t.fin}</div>
-                        </div>`;
+                    col.innerHTML += `<div class="tarea-card prioridad-${t.prioridad}" onclick="abrirModal('${t.id}')">
+                        <div class="font-negrita-dura mb-1">${t.tarea}</div>
+                        <div class="text-slate-400" style="font-size: 9px !important;">${t.inicio} > ${t.fin}</div>
+                    </div>`;
                 });
             });
-
-            const tabla = document.getElementById('tablaBody');
-            tabla.innerHTML = tareas.map(t => `
+            document.getElementById('tablaBody').innerHTML = tareas.map(t => `
                 <tr class="border-b hover:bg-slate-50 cursor-pointer" onclick="abrirModal('${t.id}')">
                     <td class="py-4 px-2 font-negrita-dura">${t.tarea}</td>
                     <td class="py-4 px-2">${t.estado}</td>
@@ -225,11 +213,11 @@
                     <td class="py-4 px-2">${t.inicio}</td>
                     <td class="py-4 px-2">${t.fin}</td>
                     <td class="py-4 px-2 text-blue-500 font-negrita-dura">EDITAR</td>
-                </tr>
-            `).join('');
+                </tr>`).join('');
         }
 
         async function guardar() {
+            if(!document.getElementById('taskName').value || !document.getElementById('taskStart').value) return alert("COMPLETAR DATOS");
             const payload = {
                 accion: "GUARDAR",
                 id: document.getElementById('taskId').value,
@@ -240,15 +228,13 @@
                 fin: document.getElementById('taskEnd').value
             };
             await fetch(SCRIPT_URL, {method: 'POST', body: JSON.stringify(payload)});
-            cerrarModal();
-            cargar();
+            cerrarModal(); cargar();
         }
 
         async function eliminar() {
-            if(!confirm("¿ELIMINAR ESTA ACTIVIDAD?")) return;
+            if(!confirm("¿ELIMINAR ACTIVIDAD?")) return;
             await fetch(SCRIPT_URL, {method: 'POST', body: JSON.stringify({accion: "ELIMINAR", id: document.getElementById('taskId').value})});
-            cerrarModal();
-            cargar();
+            cerrarModal(); cargar();
         }
 
         function cambiarVista(v) {
@@ -276,7 +262,6 @@
         }
 
         function cerrarModal() { document.getElementById('modalTarea').classList.add('hidden'); }
-
         cargar();
     </script>
 </body>
