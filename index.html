@@ -1,78 +1,317 @@
-// Reemplaza la función abrirModal por esta:
-function abrirModal(id = "") {
-    archivoBase64 = null; // Reset de la imagen cargada en sesión
-    document.getElementById('taskFile').value = ""; // Limpiar input file
-    
-    const t = tareas.find(x => x.id.toString() === id.toString()) || 
-              {id:"", tarea:"", estado:"PENDIENTE", prioridad:"MEDIA", inicio:"", fin:"", fotoUrl:""};
-    
-    document.getElementById('taskId').value = t.id;
-    document.getElementById('taskName').value = t.tarea;
-    document.getElementById('taskStatus').value = t.estado;
-    document.getElementById('taskPriority').value = t.prioridad;
-    document.getElementById('taskStart').value = t.inicio;
-    document.getElementById('taskEnd').value = t.fin;
-
-    // Mostrar miniatura si existe URL en el Excel
-    const previewContainer = document.getElementById('fotoPreviewContainer');
-    if (t.fotoUrl && t.fotoUrl.includes("drive.google.com")) {
-        // Convertimos el link normal de Drive a un link de miniatura directa
-        const fileId = t.fotoUrl.split('id=')[1] || t.fotoUrl.split('/d/')[1].split('/')[0];
-        const thumbUrl = `https://lh3.googleusercontent.com/d/${fileId}=s400`;
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BIM Project Manager Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Estética Técnica: Fuente 11px y Mayúsculas */
+        * { font-size: 11px !important; text-transform: uppercase; font-family: sans-serif; }
+        .font-negrita-dura { font-weight: 900 !important; }
         
-        previewContainer.innerHTML = `
-            <div class="mt-4">
-                <p class="font-negrita-dura text-blue-500 mb-2">EVIDENCIA ACTUAL:</p>
-                <a href="${t.fotoUrl}" target="_blank">
-                    <img src="${thumbUrl}" class="preview-img" style="border: 3px solid #10b981;" title="ANTICLIC PARA ABRIR ORIGINAL">
-                </a>
-                <p class="text-[8px] text-slate-400 mt-1 text-center">CLIC PARA VER EN GRANDE / ANTICLIC PARA OPCIONES</p>
-            </div>`;
-    } else {
-        previewContainer.innerHTML = "";
-    }
+        /* Contenedores Kanban */
+        .kanban-col { min-height: 450px; background: #f8fafc; border-radius: 15px; padding: 12px; border: 1px solid #e2e8f0; }
+        .tarea-card { background: white; padding: 12px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 10px; cursor: pointer; border-left: 4px solid #cbd5e1; }
+        
+        /* Prioridades Visuales */
+        .prioridad-ALTA { border-left-color: #ef4444 !important; color: #ef4444; }
+        .prioridad-MEDIA { border-left-color: #f59e0b !important; color: #b45309; }
+        .prioridad-BAJA { border-left-color: #10b981 !important; color: #047857; }
 
-    toggleFotoSection();
-    document.getElementById('modalTarea').classList.remove('hidden');
-}
+        /* Cronograma Simétrico (Layout Fijo) */
+        .cronograma-wrapper { overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 8px; background: white; }
+        .cronograma-table { border-collapse: collapse; table-layout: fixed; min-width: 100%; }
+        .cronograma-table th, .cronograma-table td { border: 1px solid #e2e8f0; text-align: center; height: 32px; overflow: hidden; }
+        
+        .header-mes { background: #1e293b; color: white; font-weight: 900; height: 25px; }
+        .header-dia { background: #f1f5f9; width: 30px !important; min-width: 30px !important; }
+        
+        .col-nombre { width: 150px !important; min-width: 150px !important; text-align: left !important; padding-left: 8px !important; background: white; position: sticky; left: 0; z-index: 10; border-right: 2px solid #e2e8f0 !important; white-space: nowrap; }
+        .col-duracion { width: 45px !important; min-width: 45px !important; background: #f8fafc; font-weight: 900; }
+        
+        /* Marcado de Terminados */
+        .celda-activa-alta { background-color: #ef4444; }
+        .celda-activa-media { background-color: #f59e0b; }
+        .celda-activa-baja { background-color: #10b981; }
+        .estado-terminado { opacity: 0.25; filter: grayscale(60%); }
 
-// Reemplaza la función guardar por esta para evitar el falso "Offline":
-async function guardar() {
-    const btn = document.getElementById('btnGuardar');
-    const originalText = btn.innerText;
-    btn.innerText = "PROCESANDO AS-BUILT...";
-    btn.disabled = true;
+        /* Estilo de Miniatura */
+        .preview-img { width: 100%; height: 140px; object-fit: cover; border-radius: 12px; margin-top: 10px; border: 3px solid #f1f5f9; cursor: zoom-in; transition: transform 0.2s; }
+        .preview-img:hover { transform: scale(1.02); }
+        
+        input, select { text-transform: none !important; }
+    </style>
+</head>
+<body class="bg-slate-50 p-4 text-slate-800">
+    <div class="max-w-7xl mx-auto">
+        
+        <button id="btnSync" onclick="sincronizarOffline()" class="hidden w-full mb-4 bg-orange-500 text-white py-4 rounded-xl font-negrita-dura shadow-lg animate-pulse">
+            🔄 HAY DATOS PENDIENTES (CLIC PARA SINCRONIZAR)
+        </button>
 
-    const payload = {
-        accion: "GUARDAR",
-        id: document.getElementById('taskId').value || Date.now().toString(),
-        tarea: document.getElementById('taskName').value,
-        estado: document.getElementById('taskStatus').value,
-        prioridad: document.getElementById('taskPriority').value,
-        inicio: document.getElementById('taskStart').value,
-        fin: document.getElementById('taskEnd').value,
-        archivoBase64: archivoBase64 
-    };
+        <div class="bg-slate-800 p-6 text-white rounded-t-3xl shadow-lg">
+            <h1 class="font-negrita-dura tracking-widest text-center mb-4">GESTOR DE PROYECTOS BIM</h1>
+            <div class="flex justify-center gap-6">
+                <button onclick="cambiarVista('KANBAN')" id="btn-KANBAN" class="font-negrita-dura pb-1 border-b-2 border-white">TABLERO KANBAN</button>
+                <button onclick="cambiarVista('CRONO')" id="btn-CRONO" class="font-negrita-dura pb-1 border-b-2 border-transparent opacity-60">CRONOGRAMA DIARIO</button>
+            </div>
+        </div>
 
-    try {
-        // Intentamos envío normal para asegurar que la imagen viaje completa
-        const response = await fetch(SCRIPT_URL, {
-            method: 'POST',
-            body: JSON.stringify(payload)
+        <div class="bg-white p-6 rounded-b-3xl shadow-xl">
+            <button onclick="abrirModal()" class="mb-6 bg-blue-600 text-white px-6 py-3 rounded-xl font-negrita-dura shadow-lg">+ NUEVA ACTIVIDAD</button>
+            
+            <div id="vista-KANBAN">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div><h2 class="font-negrita-dura mb-3 text-slate-400 text-center">PENDIENTE</h2><div id="col-PENDIENTE" class="kanban-col"></div></div>
+                    <div><h2 class="font-negrita-dura mb-3 text-blue-500 text-center">EN PROGRESO</h2><div id="col-PROGRESO" class="kanban-col"></div></div>
+                    <div><h2 class="font-negrita-dura mb-3 text-green-500 text-center">TERMINADO</h2><div id="col-TERMINADO" class="kanban-col"></div></div>
+                </div>
+            </div>
+
+            <div id="vista-CRONO" class="hidden">
+                <div class="cronograma-wrapper" id="cronogramaContainer"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modalTarea" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50 overflow-y-auto">
+        <div class="bg-white p-8 rounded-3xl w-full max-w-sm my-auto shadow-2xl">
+            <h2 class="font-negrita-dura mb-6 text-center text-slate-600">DETALLES DE ACTIVIDAD</h2>
+            <input type="hidden" id="taskId">
+            
+            <label class="block font-negrita-dura text-slate-400 mb-1">NOMBRE (MÁX 20 CARACTERES):</label>
+            <input type="text" id="taskName" maxlength="20" class="w-full p-3 border-2 rounded-xl mb-4 font-negrita-dura outline-none focus:border-blue-500" placeholder="EJ: VACIADO SECTOR A">
+            
+            <label class="block font-negrita-dura text-slate-400 mb-1">ESTADO:</label>
+            <select id="taskStatus" onchange="toggleFotoSection()" class="w-full p-3 border-2 rounded-xl mb-4 font-negrita-dura">
+                <option value="PENDIENTE">PENDIENTE</option>
+                <option value="PROGRESO">EN PROGRESO</option>
+                <option value="TERMINADO">TERMINADO</option>
+            </select>
+
+            <label class="block font-negrita-dura text-slate-400 mb-1">PRIORIDAD:</label>
+            <select id="taskPriority" class="w-full p-3 border-2 rounded-xl mb-4 font-negrita-dura">
+                <option value="ALTA">ALTA</option>
+                <option value="MEDIA">MEDIA</option>
+                <option value="BAJA">BAJA</option>
+            </select>
+
+            <div class="grid grid-cols-2 gap-4 mb-6">
+                <div><label class="font-negrita-dura text-slate-400">INICIO:</label><input type="date" id="taskStart" class="w-full p-2 border-2 rounded-lg"></div>
+                <div><label class="font-negrita-dura text-slate-400">FIN:</label><input type="date" id="taskEnd" class="w-full p-2 border-2 rounded-lg"></div>
+            </div>
+
+            <div id="fotoSection" class="hidden border-t border-dashed pt-4 mb-6">
+                <label class="font-negrita-dura text-slate-500">SUBIR EVIDENCIA (AS-BUILT):</label>
+                <input type="file" id="taskFile" accept="image/*" class="w-full mt-2 text-[9px]">
+                <div id="fotoPreviewContainer"></div>
+            </div>
+
+            <div class="flex gap-2">
+                <button onclick="guardar()" id="btnGuardar" class="flex-1 bg-blue-600 text-white py-3 rounded-xl font-negrita-dura shadow-md hover:bg-blue-700 transition-all">GUARDAR</button>
+                <button id="btnEliminar" onclick="eliminar()" class="hidden bg-red-500 text-white px-3 rounded-xl font-negrita-dura">X</button>
+                <button onclick="cerrarModal()" class="bg-slate-100 text-slate-400 px-4 rounded-xl font-negrita-dura">CERRAR</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz9AwG77FokRKK2nVz_0j_3hizasIKLv7sELV-FZR-yk2nEbUvFrlt5vQbhsPzbnie0kA/exec"; 
+        let tareas = [];
+        let archivoBase64 = null;
+
+        // --- MANEJO DE IMÁGENES ---
+        document.getElementById('taskFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = () => { archivoBase64 = reader.result; };
+            reader.readAsDataURL(file);
         });
-        
-        // Si no hay error de red, asumimos éxito
-        alert("✅ ACTIVIDAD Y FOTO GUARDADAS CORRECTAMENTE");
-    } catch (e) {
-        // Solo si falla totalmente la conexión se va a LocalStorage
-        const pendientes = JSON.parse(localStorage.getItem('pendientes') || "[]");
-        pendientes.push(payload);
-        localStorage.setItem('pendientes', JSON.stringify(pendientes));
-        alert("📡 SIN RED: GUARDADO LOCALMENTE EN EL CELULAR");
-    }
 
-    btn.innerText = originalText;
-    btn.disabled = false;
-    cerrarModal();
-    setTimeout(cargar, 2000); // Recargamos para ver la miniatura nueva
-}
+        function toggleFotoSection() {
+            const status = document.getElementById('taskStatus').value;
+            document.getElementById('fotoSection').classList.toggle('hidden', status !== 'TERMINADO');
+        }
+
+        // --- CRUD Y SINCRONIZACIÓN ---
+        async function cargar() {
+            checkOffline();
+            try {
+                const resp = await fetch(SCRIPT_URL, {method: 'POST', body: JSON.stringify({accion: "LEER"})});
+                const data = await resp.json();
+                // Estructura: ID[0], TAREA[1], ESTADO[2], INICIO[3], FIN[4], PRIORIDAD[5], FOTO[6]
+                tareas = data.slice(1).map(r => ({
+                    id: r[0], tarea: r[1], estado: r[2], inicio: r[3], fin: r[4], prioridad: r[5], fotoUrl: r[6]
+                }));
+                render();
+            } catch(e) { console.warn("Modo Offline Activo"); }
+        }
+
+        function checkOffline() {
+            const pendientes = JSON.parse(localStorage.getItem('pendientes') || "[]");
+            document.getElementById('btnSync').classList.toggle('hidden', pendientes.length === 0);
+        }
+
+        async function guardar() {
+            const btn = document.getElementById('btnGuardar');
+            const originalText = btn.innerText;
+            btn.innerText = "PROCESANDO AS-BUILT...";
+            btn.disabled = true;
+
+            const payload = {
+                accion: "GUARDAR",
+                id: document.getElementById('taskId').value || Date.now().toString(),
+                tarea: document.getElementById('taskName').value,
+                estado: document.getElementById('taskStatus').value,
+                prioridad: document.getElementById('taskPriority').value,
+                inicio: document.getElementById('taskStart').value,
+                fin: document.getElementById('taskEnd').value,
+                archivoBase64: archivoBase64
+            };
+
+            try {
+                const response = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(payload) });
+                const result = await response.text();
+                if (result.includes("OK")) alert("✅ GUARDADO CORRECTO EN LA NUBE");
+                else throw new Error();
+            } catch (e) {
+                const pendientes = JSON.parse(localStorage.getItem('pendientes') || "[]");
+                pendientes.push(payload);
+                localStorage.setItem('pendientes', JSON.stringify(pendientes));
+                alert("📡 SIN RED: GUARDADO LOCALMENTE");
+            }
+
+            btn.innerText = originalText;
+            btn.disabled = false;
+            cerrarModal();
+            setTimeout(cargar, 1500);
+        }
+
+        async function eliminar() {
+            if(!confirm("¿ELIMINAR ESTA ACTIVIDAD?")) return;
+            const id = document.getElementById('taskId').value;
+            await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({accion: "ELIMINAR", id: id}) });
+            cerrarModal(); cargar();
+        }
+
+        async function sincronizarOffline() {
+            const btn = document.getElementById('btnSync');
+            btn.innerText = "SINCRONIZANDO...";
+            const pendientes = JSON.parse(localStorage.getItem('pendientes') || "[]");
+            for (let p of pendientes) {
+                await fetch(SCRIPT_URL, {method: 'POST', body: JSON.stringify(p)});
+            }
+            localStorage.removeItem('pendientes');
+            alert("✅ SINCRONIZACIÓN COMPLETADA");
+            cargar();
+        }
+
+        // --- RENDERIZADO VISUAL ---
+        function render() {
+            ["PENDIENTE", "PROGRESO", "TERMINADO"].forEach(est => {
+                const col = document.getElementById('col-' + est);
+                col.innerHTML = "";
+                tareas.filter(t => t.estado === est).forEach(t => {
+                    col.innerHTML += `
+                        <div class="tarea-card prioridad-${t.prioridad}" onclick="abrirModal('${t.id}')">
+                            <div class="font-negrita-dura mb-1 text-slate-700">${t.tarea}</div>
+                            <div class="text-slate-400" style="font-size:9px !important;">${t.inicio} > ${t.fin}</div>
+                        </div>`;
+                });
+            });
+            if(!document.getElementById('vista-CRONO').classList.contains('hidden')) renderCronograma();
+        }
+
+        function renderCronograma() {
+            const container = document.getElementById('cronogramaContainer');
+            if (tareas.length === 0) return container.innerHTML = "<div class='p-10 text-center font-negrita-dura'>NO HAY DATOS</div>";
+
+            let fechas = tareas.flatMap(t => [new Date(t.inicio + "T00:00:00"), new Date(t.fin + "T00:00:00")]).filter(d => !isNaN(d));
+            let minDate = new Date(Math.min(...fechas)); minDate.setDate(minDate.getDate() - 1);
+            let maxDate = new Date(Math.max(...fechas)); maxDate.setDate(maxDate.getDate() + 4);
+
+            let listaDias = [];
+            let current = new Date(minDate);
+            while (current <= maxDate) { listaDias.push(new Date(current)); current.setDate(current.getDate() + 1); }
+
+            let html = `<table class="cronograma-table"><thead><tr><th class="col-nombre header-mes">ACTIVIDAD</th><th class="col-duracion header-mes">DÍAS</th>`;
+            let mesesHeads = [], mesActual = -1, spanMes = 0;
+            listaDias.forEach(d => {
+                if (d.getMonth() !== mesActual) {
+                    if (mesActual !== -1) mesesHeads.push({nombre: obtenerMes(mesActual), span: spanMes});
+                    mesActual = d.getMonth(); spanMes = 1;
+                } else spanMes++;
+            });
+            mesesHeads.push({nombre: obtenerMes(mesActual), span: spanMes});
+            mesesHeads.forEach(m => html += `<th colspan="${m.span}" class="header-mes" style="border-left:1px solid #475569">${m.nombre}</th>`);
+            html += `</tr><tr><th class="col-nombre"></th><th class="col-duracion"></th>`;
+            listaDias.forEach(d => html += `<th class="header-dia ${d.getDay() === 0 || d.getDay() === 6 ? 'bg-slate-200' : ''}">${d.getDate()}</th>`);
+            html += `</tr></thead><tbody>`;
+
+            tareas.forEach(t => {
+                const ini = new Date(t.inicio + "T00:00:00"), fin = new Date(t.fin + "T00:00:00");
+                const dur = Math.ceil((fin - ini) / (1000 * 60 * 60 * 24)) + 1;
+                const isTerminado = t.estado === "TERMINADO";
+                html += `<tr><td class="col-nombre font-negrita-dura ${isTerminado ? 'text-slate-300' : ''}">${t.tarea}</td><td class="col-duracion">${dur}D</td>`;
+                listaDias.forEach(d => {
+                    let clase = (d >= ini && d <= fin) ? `celda-activa-${t.prioridad.toLowerCase()} ${isTerminado ? 'estado-terminado' : ''}` : "";
+                    html += `<td class="${clase}"></td>`;
+                });
+                html += `</tr>`;
+            });
+            container.innerHTML = html + "</tbody></table>";
+        }
+
+        function obtenerMes(n) { return ["ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SET", "OCT", "NOV", "DIC"][n]; }
+
+        function abrirModal(id = "") {
+            archivoBase64 = null;
+            document.getElementById('taskFile').value = "";
+            const t = tareas.find(x => x.id.toString() === id.toString()) || 
+                      {id:"", tarea:"", estado:"PENDIENTE", prioridad:"MEDIA", inicio:"", fin:"", fotoUrl:""};
+            
+            document.getElementById('taskId').value = t.id;
+            document.getElementById('taskName').value = t.tarea;
+            document.getElementById('taskStatus').value = t.estado;
+            document.getElementById('taskPriority').value = t.prioridad;
+            document.getElementById('taskStart').value = t.inicio;
+            document.getElementById('taskEnd').value = t.fin;
+            document.getElementById('btnEliminar').classList.toggle('hidden', !t.id);
+
+            // MINIATURA DE IMAGEN
+            const previewContainer = document.getElementById('fotoPreviewContainer');
+            if (t.fotoUrl && t.fotoUrl.includes("id=")) {
+                const fileId = t.fotoUrl.split('id=')[1];
+                // Link optimizado para miniaturas de Drive
+                const thumbUrl = `https://lh3.googleusercontent.com/d/${fileId}`;
+                previewContainer.innerHTML = `
+                    <div class="mt-4">
+                        <a href="${t.fotoUrl}" target="_blank">
+                            <img src="${thumbUrl}" class="preview-img" title="ANTICLIC PARA NUEVA PESTAÑA">
+                        </a>
+                        <p class="text-[8px] text-slate-400 mt-1 text-center">CLIC PARA ZOOM / ANTICLIC PARA ORIGINAL</p>
+                    </div>`;
+            } else {
+                previewContainer.innerHTML = "";
+            }
+
+            toggleFotoSection();
+            document.getElementById('modalTarea').classList.remove('hidden');
+        }
+
+        function cerrarModal() { document.getElementById('modalTarea').classList.add('hidden'); }
+        
+        function cambiarVista(v) {
+            document.getElementById('vista-KANBAN').classList.toggle('hidden', v !== 'KANBAN');
+            document.getElementById('vista-CRONO').classList.toggle('hidden', v !== 'CRONO');
+            document.getElementById('btn-KANBAN').classList.toggle('opacity-60', v !== 'KANBAN');
+            document.getElementById('btn-CRONO').classList.toggle('opacity-60', v !== 'CRONO');
+            if(v === 'CRONO') renderCronograma();
+        }
+
+        cargar();
+    </script>
+</body>
+</html>
