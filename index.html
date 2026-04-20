@@ -6,55 +6,37 @@
     <title>BIM Project Manager Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Estética Técnica: Fuente 11px y Mayúsculas */
         * { font-size: 11px !important; text-transform: uppercase; font-family: sans-serif; }
         .font-negrita-dura { font-weight: 900 !important; }
-        
-        /* Contenedores Kanban */
         .kanban-col { min-height: 450px; background: #f8fafc; border-radius: 15px; padding: 12px; border: 1px solid #e2e8f0; }
         .tarea-card { background: white; padding: 12px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 10px; cursor: pointer; border-left: 4px solid #cbd5e1; }
-        
-        /* Prioridades Visuales */
         .prioridad-ALTA { border-left-color: #ef4444 !important; color: #ef4444; }
         .prioridad-MEDIA { border-left-color: #f59e0b !important; color: #b45309; }
         .prioridad-BAJA { border-left-color: #10b981 !important; color: #047857; }
-
-        /* Cronograma Simétrico (Layout Fijo) */
         .cronograma-wrapper { overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 8px; background: white; }
         .cronograma-table { border-collapse: collapse; table-layout: fixed; min-width: 100%; }
         .cronograma-table th, .cronograma-table td { border: 1px solid #e2e8f0; text-align: center; height: 32px; overflow: hidden; }
-        
         .header-mes { background: #1e293b; color: white; font-weight: 900; height: 25px; }
         .header-dia { background: #f1f5f9; width: 30px !important; min-width: 30px !important; }
-        
         .col-nombre { width: 150px !important; min-width: 150px !important; text-align: left !important; padding-left: 8px !important; background: white; position: sticky; left: 0; z-index: 10; border-right: 2px solid #e2e8f0 !important; white-space: nowrap; }
         .col-duracion { width: 45px !important; min-width: 45px !important; background: #f8fafc; font-weight: 900; }
-        
-        /* Marcado de Terminados */
         .celda-activa-alta { background-color: #ef4444; }
         .celda-activa-media { background-color: #f59e0b; }
         .celda-activa-baja { background-color: #10b981; }
         .estado-terminado { opacity: 0.25; filter: grayscale(60%); }
-
-        /* Estilo de Miniatura */
-        .preview-img { width: 100%; height: 140px; object-fit: cover; border-radius: 12px; margin-top: 10px; border: 3px solid #f1f5f9; cursor: zoom-in; transition: transform 0.2s; }
-        .preview-img:hover { transform: scale(1.02); }
-        
+        .preview-img { width: 100%; height: 140px; object-fit: cover; border-radius: 12px; margin-top: 10px; border: 3px solid #10b981; cursor: zoom-in; }
         input, select { text-transform: none !important; }
     </style>
 </head>
 <body class="bg-slate-50 p-4 text-slate-800">
     <div class="max-w-7xl mx-auto">
-        
-        <button id="btnSync" onclick="sincronizarOffline()" class="hidden w-full mb-4 bg-orange-500 text-white py-4 rounded-xl font-negrita-dura shadow-lg animate-pulse">
-            🔄 HAY DATOS PENDIENTES (CLIC PARA SINCRONIZAR)
-        </button>
+        <button id="btnSync" onclick="sincronizarOffline()" class="hidden w-full mb-4 bg-orange-500 text-white py-4 rounded-xl font-negrita-dura shadow-lg animate-pulse">🔄 SINCRONIZAR DATOS PENDIENTES</button>
 
         <div class="bg-slate-800 p-6 text-white rounded-t-3xl shadow-lg">
             <h1 class="font-negrita-dura tracking-widest text-center mb-4">GESTOR DE PROYECTOS BIM</h1>
             <div class="flex justify-center gap-6">
-                <button onclick="cambiarVista('KANBAN')" id="btn-KANBAN" class="font-negrita-dura pb-1 border-b-2 border-white">TABLERO KANBAN</button>
-                <button onclick="cambiarVista('CRONO')" id="btn-CRONO" class="font-negrita-dura pb-1 border-b-2 border-transparent opacity-60">CRONOGRAMA DIARIO</button>
+                <button onclick="cambiarVista('KANBAN')" id="btn-KANBAN" class="font-negrita-dura pb-1 border-b-2 border-white">TABLERO</button>
+                <button onclick="cambiarVista('CRONO')" id="btn-CRONO" class="font-negrita-dura pb-1 border-b-2 border-transparent opacity-60">CRONOGRAMA</button>
             </div>
         </div>
 
@@ -64,24 +46,20 @@
             <div id="vista-KANBAN">
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div><h2 class="font-negrita-dura mb-3 text-slate-400 text-center">PENDIENTE</h2><div id="col-PENDIENTE" class="kanban-col"></div></div>
-                    <div><h2 class="font-negrita-dura mb-3 text-blue-500 text-center">EN PROGRESO</h2><div id="col-PROGRESO" class="kanban-col"></div></div>
+                    <div><h2 class="font-negrita-dura mb-3 text-blue-500 text-center">PROGRESO</h2><div id="col-PROGRESO" class="kanban-col"></div></div>
                     <div><h2 class="font-negrita-dura mb-3 text-green-500 text-center">TERMINADO</h2><div id="col-TERMINADO" class="kanban-col"></div></div>
                 </div>
             </div>
-
-            <div id="vista-CRONO" class="hidden">
-                <div class="cronograma-wrapper" id="cronogramaContainer"></div>
-            </div>
+            <div id="vista-CRONO" class="hidden"><div class="cronograma-wrapper" id="cronogramaContainer"></div></div>
         </div>
     </div>
 
     <div id="modalTarea" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50 overflow-y-auto">
         <div class="bg-white p-8 rounded-3xl w-full max-w-sm my-auto shadow-2xl">
-            <h2 class="font-negrita-dura mb-6 text-center text-slate-600">DETALLES DE ACTIVIDAD</h2>
+            <h2 class="font-negrita-dura mb-6 text-center text-slate-600">DETALLES</h2>
             <input type="hidden" id="taskId">
-            
-            <label class="block font-negrita-dura text-slate-400 mb-1">NOMBRE (MÁX 20 CARACTERES):</label>
-            <input type="text" id="taskName" maxlength="20" class="w-full p-3 border-2 rounded-xl mb-4 font-negrita-dura outline-none focus:border-blue-500" placeholder="EJ: VACIADO SECTOR A">
+            <label class="block font-negrita-dura text-slate-400 mb-1">NOMBRE (MÁX 20):</label>
+            <input type="text" id="taskName" maxlength="20" class="w-full p-3 border-2 rounded-xl mb-4 font-negrita-dura outline-none focus:border-blue-500">
             
             <label class="block font-negrita-dura text-slate-400 mb-1">ESTADO:</label>
             <select id="taskStatus" onchange="toggleFotoSection()" class="w-full p-3 border-2 rounded-xl mb-4 font-negrita-dura">
@@ -90,27 +68,23 @@
                 <option value="TERMINADO">TERMINADO</option>
             </select>
 
-            <label class="block font-negrita-dura text-slate-400 mb-1">PRIORIDAD:</label>
             <select id="taskPriority" class="w-full p-3 border-2 rounded-xl mb-4 font-negrita-dura">
-                <option value="ALTA">ALTA</option>
-                <option value="MEDIA">MEDIA</option>
-                <option value="BAJA">BAJA</option>
+                <option value="ALTA">ALTA</option><option value="MEDIA">MEDIA</option><option value="BAJA">BAJA</option>
             </select>
 
-            <div class="grid grid-cols-2 gap-4 mb-6">
-                <div><label class="font-negrita-dura text-slate-400">INICIO:</label><input type="date" id="taskStart" class="w-full p-2 border-2 rounded-lg"></div>
-                <div><label class="font-negrita-dura text-slate-400">FIN:</label><input type="date" id="taskEnd" class="w-full p-2 border-2 rounded-lg"></div>
+            <div class="grid grid-cols-2 gap-4 mb-4">
+                <input type="date" id="taskStart" class="w-full p-2 border-2 rounded-lg"><input type="date" id="taskEnd" class="w-full p-2 border-2 rounded-lg">
             </div>
 
-            <div id="fotoSection" class="hidden border-t border-dashed pt-4 mb-6">
-                <label class="font-negrita-dura text-slate-500">SUBIR EVIDENCIA (AS-BUILT):</label>
+            <div id="fotoSection" class="hidden border-t border-dashed pt-4 mb-4">
+                <label class="font-negrita-dura text-slate-500">EVIDENCIA AS-BUILT:</label>
                 <input type="file" id="taskFile" accept="image/*" class="w-full mt-2 text-[9px]">
                 <div id="fotoPreviewContainer"></div>
             </div>
 
             <div class="flex gap-2">
-                <button onclick="guardar()" id="btnGuardar" class="flex-1 bg-blue-600 text-white py-3 rounded-xl font-negrita-dura shadow-md hover:bg-blue-700 transition-all">GUARDAR</button>
-                <button id="btnEliminar" onclick="eliminar()" class="hidden bg-red-500 text-white px-3 rounded-xl font-negrita-dura">X</button>
+                <button onclick="guardar()" id="btnGuardar" class="flex-1 bg-blue-600 text-white py-3 rounded-xl font-negrita-dura shadow-md">GUARDAR</button>
+                <button id="btnEliminar" onclick="eliminar()" class="hidden bg-red-500 text-white px-4 rounded-xl font-negrita-dura text-[14px]">×</button>
                 <button onclick="cerrarModal()" class="bg-slate-100 text-slate-400 px-4 rounded-xl font-negrita-dura">CERRAR</button>
             </div>
         </div>
@@ -121,7 +95,6 @@
         let tareas = [];
         let archivoBase64 = null;
 
-        // --- MANEJO DE IMÁGENES ---
         document.getElementById('taskFile').addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (!file) return;
@@ -135,31 +108,19 @@
             document.getElementById('fotoSection').classList.toggle('hidden', status !== 'TERMINADO');
         }
 
-        // --- CRUD Y SINCRONIZACIÓN ---
         async function cargar() {
             checkOffline();
             try {
                 const resp = await fetch(SCRIPT_URL, {method: 'POST', body: JSON.stringify({accion: "LEER"})});
                 const data = await resp.json();
-                // Estructura: ID[0], TAREA[1], ESTADO[2], INICIO[3], FIN[4], PRIORIDAD[5], FOTO[6]
-                tareas = data.slice(1).map(r => ({
-                    id: r[0], tarea: r[1], estado: r[2], inicio: r[3], fin: r[4], prioridad: r[5], fotoUrl: r[6]
-                }));
+                tareas = data.slice(1).map(r => ({id:r[0], tarea:r[1], estado:r[2], inicio:r[3], fin:r[4], prioridad:r[5], fotoUrl:r[6]}));
                 render();
-            } catch(e) { console.warn("Modo Offline Activo"); }
-        }
-
-        function checkOffline() {
-            const pendientes = JSON.parse(localStorage.getItem('pendientes') || "[]");
-            document.getElementById('btnSync').classList.toggle('hidden', pendientes.length === 0);
+            } catch(e) { console.warn("Offline"); }
         }
 
         async function guardar() {
             const btn = document.getElementById('btnGuardar');
-            const originalText = btn.innerText;
-            btn.innerText = "PROCESANDO AS-BUILT...";
-            btn.disabled = true;
-
+            btn.innerText = "SUBIENDO..."; btn.disabled = true;
             const payload = {
                 accion: "GUARDAR",
                 id: document.getElementById('taskId').value || Date.now().toString(),
@@ -170,108 +131,22 @@
                 fin: document.getElementById('taskEnd').value,
                 archivoBase64: archivoBase64
             };
-
             try {
-                const response = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(payload) });
-                const result = await response.text();
-                if (result.includes("OK")) alert("✅ GUARDADO CORRECTO EN LA NUBE");
-                else throw new Error();
+                await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(payload) });
+                alert("✅ GUARDADO EXITOSO");
             } catch (e) {
                 const pendientes = JSON.parse(localStorage.getItem('pendientes') || "[]");
                 pendientes.push(payload);
                 localStorage.setItem('pendientes', JSON.stringify(pendientes));
-                alert("📡 SIN RED: GUARDADO LOCALMENTE");
+                alert("📡 SIN RED: GUARDADO LOCAL");
             }
-
-            btn.innerText = originalText;
-            btn.disabled = false;
-            cerrarModal();
-            setTimeout(cargar, 1500);
+            btn.innerText = "GUARDAR"; btn.disabled = false;
+            cerrarModal(); setTimeout(cargar, 1500);
         }
-
-        async function eliminar() {
-            if(!confirm("¿ELIMINAR ESTA ACTIVIDAD?")) return;
-            const id = document.getElementById('taskId').value;
-            await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({accion: "ELIMINAR", id: id}) });
-            cerrarModal(); cargar();
-        }
-
-        async function sincronizarOffline() {
-            const btn = document.getElementById('btnSync');
-            btn.innerText = "SINCRONIZANDO...";
-            const pendientes = JSON.parse(localStorage.getItem('pendientes') || "[]");
-            for (let p of pendientes) {
-                await fetch(SCRIPT_URL, {method: 'POST', body: JSON.stringify(p)});
-            }
-            localStorage.removeItem('pendientes');
-            alert("✅ SINCRONIZACIÓN COMPLETADA");
-            cargar();
-        }
-
-        // --- RENDERIZADO VISUAL ---
-        function render() {
-            ["PENDIENTE", "PROGRESO", "TERMINADO"].forEach(est => {
-                const col = document.getElementById('col-' + est);
-                col.innerHTML = "";
-                tareas.filter(t => t.estado === est).forEach(t => {
-                    col.innerHTML += `
-                        <div class="tarea-card prioridad-${t.prioridad}" onclick="abrirModal('${t.id}')">
-                            <div class="font-negrita-dura mb-1 text-slate-700">${t.tarea}</div>
-                            <div class="text-slate-400" style="font-size:9px !important;">${t.inicio} > ${t.fin}</div>
-                        </div>`;
-                });
-            });
-            if(!document.getElementById('vista-CRONO').classList.contains('hidden')) renderCronograma();
-        }
-
-        function renderCronograma() {
-            const container = document.getElementById('cronogramaContainer');
-            if (tareas.length === 0) return container.innerHTML = "<div class='p-10 text-center font-negrita-dura'>NO HAY DATOS</div>";
-
-            let fechas = tareas.flatMap(t => [new Date(t.inicio + "T00:00:00"), new Date(t.fin + "T00:00:00")]).filter(d => !isNaN(d));
-            let minDate = new Date(Math.min(...fechas)); minDate.setDate(minDate.getDate() - 1);
-            let maxDate = new Date(Math.max(...fechas)); maxDate.setDate(maxDate.getDate() + 4);
-
-            let listaDias = [];
-            let current = new Date(minDate);
-            while (current <= maxDate) { listaDias.push(new Date(current)); current.setDate(current.getDate() + 1); }
-
-            let html = `<table class="cronograma-table"><thead><tr><th class="col-nombre header-mes">ACTIVIDAD</th><th class="col-duracion header-mes">DÍAS</th>`;
-            let mesesHeads = [], mesActual = -1, spanMes = 0;
-            listaDias.forEach(d => {
-                if (d.getMonth() !== mesActual) {
-                    if (mesActual !== -1) mesesHeads.push({nombre: obtenerMes(mesActual), span: spanMes});
-                    mesActual = d.getMonth(); spanMes = 1;
-                } else spanMes++;
-            });
-            mesesHeads.push({nombre: obtenerMes(mesActual), span: spanMes});
-            mesesHeads.forEach(m => html += `<th colspan="${m.span}" class="header-mes" style="border-left:1px solid #475569">${m.nombre}</th>`);
-            html += `</tr><tr><th class="col-nombre"></th><th class="col-duracion"></th>`;
-            listaDias.forEach(d => html += `<th class="header-dia ${d.getDay() === 0 || d.getDay() === 6 ? 'bg-slate-200' : ''}">${d.getDate()}</th>`);
-            html += `</tr></thead><tbody>`;
-
-            tareas.forEach(t => {
-                const ini = new Date(t.inicio + "T00:00:00"), fin = new Date(t.fin + "T00:00:00");
-                const dur = Math.ceil((fin - ini) / (1000 * 60 * 60 * 24)) + 1;
-                const isTerminado = t.estado === "TERMINADO";
-                html += `<tr><td class="col-nombre font-negrita-dura ${isTerminado ? 'text-slate-300' : ''}">${t.tarea}</td><td class="col-duracion">${dur}D</td>`;
-                listaDias.forEach(d => {
-                    let clase = (d >= ini && d <= fin) ? `celda-activa-${t.prioridad.toLowerCase()} ${isTerminado ? 'estado-terminado' : ''}` : "";
-                    html += `<td class="${clase}"></td>`;
-                });
-                html += `</tr>`;
-            });
-            container.innerHTML = html + "</tbody></table>";
-        }
-
-        function obtenerMes(n) { return ["ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SET", "OCT", "NOV", "DIC"][n]; }
 
         function abrirModal(id = "") {
-            archivoBase64 = null;
-            document.getElementById('taskFile').value = "";
-            const t = tareas.find(x => x.id.toString() === id.toString()) || 
-                      {id:"", tarea:"", estado:"PENDIENTE", prioridad:"MEDIA", inicio:"", fin:"", fotoUrl:""};
-            
+            archivoBase64 = null; document.getElementById('taskFile').value = "";
+            const t = tareas.find(x => x.id.toString() === id.toString()) || {id:"", tarea:"", estado:"PENDIENTE", prioridad:"MEDIA", inicio:"", fin:"", fotoUrl:""};
             document.getElementById('taskId').value = t.id;
             document.getElementById('taskName').value = t.tarea;
             document.getElementById('taskStatus').value = t.estado;
@@ -280,29 +155,73 @@
             document.getElementById('taskEnd').value = t.fin;
             document.getElementById('btnEliminar').classList.toggle('hidden', !t.id);
 
-            // MINIATURA DE IMAGEN
-            const previewContainer = document.getElementById('fotoPreviewContainer');
-            if (t.fotoUrl && t.fotoUrl.includes("id=")) {
-                const fileId = t.fotoUrl.split('id=')[1];
-                // Link optimizado para miniaturas de Drive
-                const thumbUrl = `https://lh3.googleusercontent.com/d/${fileId}`;
-                previewContainer.innerHTML = `
-                    <div class="mt-4">
-                        <a href="${t.fotoUrl}" target="_blank">
-                            <img src="${thumbUrl}" class="preview-img" title="ANTICLIC PARA NUEVA PESTAÑA">
-                        </a>
-                        <p class="text-[8px] text-slate-400 mt-1 text-center">CLIC PARA ZOOM / ANTICLIC PARA ORIGINAL</p>
-                    </div>`;
-            } else {
-                previewContainer.innerHTML = "";
-            }
-
+            const preview = document.getElementById('fotoPreviewContainer');
+            if (t.fotoUrl && t.fotoUrl.includes("drive.google.com")) {
+                let fileId = t.fotoUrl.includes("id=") ? t.fotoUrl.split("id=")[1] : t.fotoUrl.split("/d/")[1].split("/")[0];
+                const thumb = `https://lh3.googleusercontent.com/d/${fileId}=s400`;
+                preview.innerHTML = `<div class="mt-4"><p class="font-negrita-dura text-blue-500 mb-2">EVIDENCIA ACTUAL:</p><a href="${t.fotoUrl}" target="_blank"><img src="${thumb}" class="preview-img" title="ANTICLIC PARA ORIGINAL"></a></div>`;
+            } else { preview.innerHTML = ""; }
             toggleFotoSection();
             document.getElementById('modalTarea').classList.remove('hidden');
         }
 
+        async function eliminar() {
+            if(!confirm("¿ELIMINAR?")) return;
+            await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({accion: "ELIMINAR", id: document.getElementById('taskId').value}) });
+            cerrarModal(); cargar();
+        }
+
+        function checkOffline() {
+            const p = JSON.parse(localStorage.getItem('pendientes') || "[]");
+            document.getElementById('btnSync').classList.toggle('hidden', p.length === 0);
+        }
+
+        async function sincronizarOffline() {
+            const btn = document.getElementById('btnSync'); btn.innerText = "SINCRONIZANDO...";
+            const p = JSON.parse(localStorage.getItem('pendientes') || "[]");
+            for (let item of p) { await fetch(SCRIPT_URL, {method: 'POST', body: JSON.stringify(item)}); }
+            localStorage.removeItem('pendientes'); alert("✅ SINCRONIZADO"); cargar();
+        }
+
+        function render() {
+            ["PENDIENTE", "PROGRESO", "TERMINADO"].forEach(est => {
+                const col = document.getElementById('col-' + est); col.innerHTML = "";
+                tareas.filter(t => t.estado === est).forEach(t => {
+                    col.innerHTML += `<div class="tarea-card prioridad-${t.prioridad}" onclick="abrirModal('${t.id}')"><div class="font-negrita-dura mb-1">${t.tarea}</div><div class="text-slate-400" style="font-size:9px !important;">${t.inicio} > ${t.fin}</div></div>`;
+                });
+            });
+            if(!document.getElementById('vista-CRONO').classList.contains('hidden')) renderCronograma();
+        }
+
+        function renderCronograma() {
+            const container = document.getElementById('cronogramaContainer');
+            if (tareas.length === 0) return container.innerHTML = "<div class='p-10 text-center font-negrita-dura'>SIN DATOS</div>";
+            let f = tareas.flatMap(t => [new Date(t.inicio + "T00:00:00"), new Date(t.fin + "T00:00:00")]).filter(d => !isNaN(d));
+            let min = new Date(Math.min(...f)); min.setDate(min.getDate() - 1);
+            let max = new Date(Math.max(...f)); max.setDate(max.getDate() + 4);
+            let lista = []; let cur = new Date(min);
+            while (cur <= max) { lista.push(new Date(cur)); cur.setDate(cur.getDate() + 1); }
+            let html = `<table class="cronograma-table"><thead><tr><th class="col-nombre header-mes">ACTIVIDAD</th><th class="col-duracion header-mes">DÍAS</th>`;
+            let meses = [], mesA = -1, span = 0;
+            lista.forEach(d => { if (d.getMonth() !== mesA) { if (mesA !== -1) meses.push({n: obtenerMes(mesA), s: span}); mesA = d.getMonth(); span = 1; } else span++; });
+            meses.push({n: obtenerMes(mesA), s: span});
+            meses.forEach(m => html += `<th colspan="${m.s}" class="header-mes" style="border-left:1px solid #475569">${m.n}</th>`);
+            html += `</tr><tr><th class="col-nombre"></th><th class="col-duracion"></th>`;
+            lista.forEach(d => html += `<th class="header-dia ${d.getDay() === 0 || d.getDay() === 6 ? 'bg-slate-200' : ''}">${d.getDate()}</th>`);
+            html += `</tr></thead><tbody>`;
+            tareas.forEach(t => {
+                const i = new Date(t.inicio + "T00:00:00"), f = new Date(t.fin + "T00:00:00"), dur = Math.ceil((f-i)/(864e5))+1;
+                html += `<tr><td class="col-nombre font-negrita-dura ${t.estado === "TERMINADO" ? 'text-slate-300' : ''}">${t.tarea}</td><td class="col-duracion">${dur}D</td>`;
+                lista.forEach(d => {
+                    let c = (d >= i && d <= f) ? `celda-activa-${t.prioridad.toLowerCase()} ${t.estado === "TERMINADO" ? 'estado-terminado' : ''}` : "";
+                    html += `<td class="${c}"></td>`;
+                });
+                html += `</tr>`;
+            });
+            container.innerHTML = html + "</tbody></table>";
+        }
+        function obtenerMes(n) { return ["ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SET", "OCT", "NOV", "DIC"][n]; }
         function cerrarModal() { document.getElementById('modalTarea').classList.add('hidden'); }
-        
         function cambiarVista(v) {
             document.getElementById('vista-KANBAN').classList.toggle('hidden', v !== 'KANBAN');
             document.getElementById('vista-CRONO').classList.toggle('hidden', v !== 'CRONO');
@@ -310,7 +229,6 @@
             document.getElementById('btn-CRONO').classList.toggle('opacity-60', v !== 'CRONO');
             if(v === 'CRONO') renderCronograma();
         }
-
         cargar();
     </script>
 </body>
