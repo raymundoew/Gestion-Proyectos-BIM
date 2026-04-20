@@ -91,7 +91,7 @@
             const file = e.target.files[0];
             if (!file) return;
             const reader = new FileReader();
-            reader.onload = () => { archivoBase64 = reader.result; };
+            reader.onload = function() { archivoBase64 = reader.result; };
             reader.readAsDataURL(file);
         });
 
@@ -105,7 +105,9 @@
             try {
                 const resp = await fetch(SCRIPT_URL, {method: 'POST', body: JSON.stringify({accion: "LEER"})});
                 const data = await resp.json();
-                tareas = data.slice(1).map(r => ({id:r[0], tarea:r[1], estado:r[2], inicio:r[3], fin:r[4], prioridad:r[5], fotoUrl:r[6]}));
+                tareas = data.slice(1).map(function(r) {
+                    return {id:r[0], tarea:r[1], estado:r[2], inicio:r[3], fin:r[4], prioridad:r[5], fotoUrl:r[6]};
+                });
                 render();
             } catch(e) { console.warn("Offline"); }
         }
@@ -113,7 +115,8 @@
         function abrirModal(id = "") {
             archivoBase64 = null;
             document.getElementById('taskFile').value = "";
-            const t = tareas.find(x => x.id.toString() === id.toString()) || {id:"", tarea:"", estado:"PENDIENTE", prioridad:"MEDIA", inicio:"", fin:"", fotoUrl:""};
+            const t = tareas.find(function(x) { return x.id.toString() === id.toString(); }) || 
+                      {id:"", tarea:"", estado:"PENDIENTE", prioridad:"MEDIA", inicio:"", fin:"", fotoUrl:""};
             
             document.getElementById('taskId').value = t.id;
             document.getElementById('taskName').value = t.tarea;
@@ -124,10 +127,10 @@
             document.getElementById('btnEliminar').classList.toggle('hidden', !t.id);
 
             const preview = document.getElementById('fotoPreviewContainer');
-            if (t.fotoUrl && t.fotoUrl.includes("id=")) {
-                const fileId = t.fotoUrl.split("id=")[1];
-                const thumb = "https://lh3.googleusercontent.com/d/" + fileId;
-                preview.innerHTML = '<div class="mt-4"><p class="font-negrita-dura text-blue-500 mb-2">EVIDENCIA ACTUAL:</p><a href="' + t.fotoUrl + '" target="_blank"><img src="' + thumb + '" class="preview-img" title="ANTICLIC PARA ORIGINAL"></a></div>';
+            if (t.fotoUrl && t.fotoUrl.includes("drive.google.com")) {
+                const fileId = t.fotoUrl.includes("id=") ? t.fotoUrl.split("id=")[1] : t.fotoUrl.split("/d/")[1].split("/")[0];
+                const thumb = "https://lh3.googleusercontent.com/d/" + fileId + "=s400";
+                preview.innerHTML = '<div class="mt-4"><p class="font-negrita-dura text-blue-500 mb-2">EVIDENCIA ACTUAL:</p><a href="' + t.fotoUrl + '" target="_blank"><img src="' + thumb + '" class="preview-img" title="ANTICLIC PARA ORIGINAL"></a><p class="text-[8px] text-slate-400 mt-1 text-center">CLIC PARA VER GRANDE</p></div>';
             } else {
                 preview.innerHTML = "";
             }
@@ -137,7 +140,10 @@
 
         async function guardar() {
             const btn = document.getElementById('btnGuardar');
-            btn.innerText = "SUBIENDO..."; btn.disabled = true;
+            const originalText = btn.innerText;
+            btn.innerText = "PROCESANDO AS-BUILT...";
+            btn.disabled = true;
+
             const payload = {
                 accion: "GUARDAR",
                 id: document.getElementById('taskId').value || Date.now().toString(),
@@ -148,21 +154,25 @@
                 fin: document.getElementById('taskEnd').value,
                 archivoBase64: archivoBase64
             };
+
             try {
-                await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(payload) });
-                alert("✅ GUARDADO EXITOSO");
+                const response = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(payload) });
+                alert("✅ ACTIVIDAD Y FOTO GUARDADAS CORRECTAMENTE");
             } catch (e) {
                 const pendientes = JSON.parse(localStorage.getItem('pendientes') || "[]");
                 pendientes.push(payload);
                 localStorage.setItem('pendientes', JSON.stringify(pendientes));
-                alert("📡 SIN RED: GUARDADO LOCAL");
+                alert("📡 SIN RED: GUARDADO LOCALMENTE EN EL CELULAR");
             }
-            btn.innerText = "GUARDAR"; btn.disabled = false;
-            cerrarModal(); setTimeout(cargar, 1500);
+
+            btn.innerText = originalText;
+            btn.disabled = false;
+            cerrarModal();
+            setTimeout(cargar, 2000);
         }
 
         async function eliminar() {
-            if(!confirm("¿ELIMINAR?")) return;
+            if(!confirm("¿ELIMINAR ESTA ACTIVIDAD?")) return;
             await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({accion: "ELIMINAR", id: document.getElementById('taskId').value}) });
             cerrarModal(); cargar();
         }
@@ -180,9 +190,9 @@
         }
 
         function render() {
-            ["PENDIENTE", "PROGRESO", "TERMINADO"].forEach(est => {
+            ["PENDIENTE", "PROGRESO", "TERMINADO"].forEach(function(est) {
                 const col = document.getElementById('col-' + est); col.innerHTML = "";
-                tareas.filter(t => t.estado === est).forEach(t => {
+                tareas.filter(function(t) { return t.estado === est; }).forEach(function(t) {
                     col.innerHTML += '<div class="tarea-card prioridad-' + t.prioridad + '" onclick="abrirModal(\'' + t.id + '\')"><div class="font-negrita-dura mb-1">' + t.tarea + '</div><div class="text-slate-400" style="font-size:9px !important;">' + t.inicio + ' > ' + t.fin + '</div></div>';
                 });
             });
@@ -192,28 +202,27 @@
         function renderCronograma() {
             const container = document.getElementById('cronogramaContainer');
             if (tareas.length === 0) return container.innerHTML = "<div class='p-10 text-center font-negrita-dura'>SIN DATOS</div>";
-            let f = tareas.flatMap(t => [new Date(t.inicio + "T00:00:00"), new Date(t.fin + "T00:00:00")]).filter(d => !isNaN(d));
+            let f = tareas.flatMap(function(t) { return [new Date(t.inicio + "T00:00:00"), new Date(t.fin + "T00:00:00")]; }).filter(function(d) { return !isNaN(d); });
             let min = new Date(Math.min(...f)); min.setDate(min.getDate() - 1);
             let max = new Date(Math.max(...f)); max.setDate(max.getDate() + 4);
             let lista = []; let cur = new Date(min);
             while (cur <= max) { lista.push(new Date(cur)); cur.setDate(cur.getDate() + 1); }
             let html = '<table class="cronograma-table"><thead><tr><th class="col-nombre header-mes">ACTIVIDAD</th><th class="col-duracion header-mes">DÍAS</th>';
             let meses = [], mesA = -1, span = 0;
-            lista.forEach(d => { if (d.getMonth() !== mesA) { if (mesA !== -1) meses.push({n: obtenerMes(mesA), s: span}); mesA = d.getMonth(); span = 1; } else span++; });
+            lista.forEach(function(d) { if (d.getMonth() !== mesA) { if (mesA !== -1) meses.push({n: obtenerMes(mesA), s: span}); mesA = d.getMonth(); span = 1; } else span++; });
             meses.push({n: obtenerMes(mesA), s: span});
-            meses.forEach(m => html += '<th colspan="' + m.s + '" class="header-mes" style="border-left:1px solid #475569">' + m.n + '</th>');
+            meses.forEach(function(m) { html += '<th colspan="' + m.s + '" class="header-mes" style="border-left:1px solid #475569">' + m.n + '</th>'; });
             html += '</tr><tr><th class="col-nombre"></th><th class="col-duracion"></th>';
-            lista.forEach(d => html += '<th class="header-dia ' + (d.getDay() === 0 || d.getDay() === 6 ? 'bg-slate-200' : '') + '">' + d.getDate() + '</th>');
+            lista.forEach(function(d) { html += '<th class="header-dia ' + (d.getDay() === 0 || d.getDay() === 6 ? 'bg-slate-200' : '') + '">' + d.getDate() + '</th>'; });
             html += '</tr></thead><tbody>';
-            tareas.forEach(t => {
+            tareas.forEach(function(t) {
                 const i = new Date(t.inicio + "T00:00:00"), f = new Date(t.fin + "T00:00:00"), dur = Math.ceil((f-i)/(864e5))+1;
                 html += '<tr><td class="col-nombre font-negrita-dura ' + (t.estado === "TERMINADO" ? 'text-slate-300' : '') + '">' + t.tarea + '</td><td class="col-duracion">' + dur + 'D</td>';
-                listaDiasCells = '';
-                lista.forEach(d => {
+                lista.forEach(function(d) {
                     let c = (d >= i && d <= f) ? 'celda-activa-' + t.prioridad.toLowerCase() + ' ' + (t.estado === "TERMINADO" ? 'estado-terminado' : '') : '';
-                    listaDiasCells += '<td class="' + c + '"></td>';
+                    html += '<td class="' + c + '"></td>';
                 });
-                html += listaDiasCells + '</tr>';
+                html += '</tr>';
             });
             container.innerHTML = html + '</tbody></table>';
         }
