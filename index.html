@@ -42,11 +42,10 @@
 
         <div class="bg-white p-6 rounded-b-3xl shadow-xl">
             <button onclick="abrirModal()" class="mb-6 bg-blue-600 text-white px-6 py-3 rounded-xl font-negrita-dura shadow-lg">+ NUEVA ACTIVIDAD</button>
-            
             <div id="vista-KANBAN">
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div><h2 class="font-negrita-dura mb-3 text-slate-400 text-center">PENDIENTE</h2><div id="col-PENDIENTE" class="kanban-col"></div></div>
-                    <div><h2 class="font-negrita-dura mb-3 text-blue-500 text-center">PROGRESO</h2><div id="col-PROGRESO" class="kanban-col"></div></div>
+                    <div><h2 class="font-negrita-dura mb-3 text-blue-500 text-center">EN PROGRESO</h2><div id="col-PROGRESO" class="kanban-col"></div></div>
                     <div><h2 class="font-negrita-dura mb-3 text-green-500 text-center">TERMINADO</h2><div id="col-TERMINADO" class="kanban-col"></div></div>
                 </div>
             </div>
@@ -59,7 +58,7 @@
             <h2 class="font-negrita-dura mb-6 text-center text-slate-600">DETALLES</h2>
             <input type="hidden" id="taskId">
             <label class="block font-negrita-dura text-slate-400 mb-1">NOMBRE (MÁX 20):</label>
-            <input type="text" id="taskName" maxlength="20" class="w-full p-3 border-2 rounded-xl mb-4 font-negrita-dura outline-none focus:border-blue-500">
+            <input type="text" id="taskName" maxlength="20" class="w-full p-3 border-2 rounded-xl mb-4 font-negrita-dura outline-none">
             
             <label class="block font-negrita-dura text-slate-400 mb-1">ESTADO:</label>
             <select id="taskStatus" onchange="toggleFotoSection()" class="w-full p-3 border-2 rounded-xl mb-4 font-negrita-dura">
@@ -84,7 +83,7 @@
 
             <div class="flex gap-2">
                 <button onclick="guardar()" id="btnGuardar" class="flex-1 bg-blue-600 text-white py-3 rounded-xl font-negrita-dura shadow-md">GUARDAR</button>
-                <button id="btnEliminar" onclick="eliminar()" class="hidden bg-red-500 text-white px-4 rounded-xl font-negrita-dura text-[14px]">×</button>
+                <button id="btnEliminar" onclick="eliminar()" class="hidden bg-red-500 text-white px-4 rounded-xl font-negrita-dura">×</button>
                 <button onclick="cerrarModal()" class="bg-slate-100 text-slate-400 px-4 rounded-xl font-negrita-dura">CERRAR</button>
             </div>
         </div>
@@ -158,8 +157,15 @@
             const preview = document.getElementById('fotoPreviewContainer');
             if (t.fotoUrl && t.fotoUrl.includes("drive.google.com")) {
                 let fileId = t.fotoUrl.includes("id=") ? t.fotoUrl.split("id=")[1] : t.fotoUrl.split("/d/")[1].split("/")[0];
-                const thumb = `https://lh3.googleusercontent.com/d/${fileId}=s400`;
-                preview.innerHTML = `<div class="mt-4"><p class="font-negrita-dura text-blue-500 mb-2">EVIDENCIA ACTUAL:</p><a href="${t.fotoUrl}" target="_blank"><img src="${thumb}" class="preview-img" title="ANTICLIC PARA ORIGINAL"></a></div>`;
+                // URL optimizada y segura para miniaturas
+                const thumb = "https://lh3.googleusercontent.com/d/" + fileId + "=s400";
+                preview.innerHTML = `
+                    <div class="mt-4">
+                        <p class="font-negrita-dura text-blue-500 mb-2">EVIDENCIA ACTUAL:</p>
+                        <a href="${t.fotoUrl}" target="_blank">
+                            <img src="${thumb}" class="preview-img" title="ANTICLIC PARA ORIGINAL">
+                        </a>
+                    </div>`;
             } else { preview.innerHTML = ""; }
             toggleFotoSection();
             document.getElementById('modalTarea').classList.remove('hidden');
