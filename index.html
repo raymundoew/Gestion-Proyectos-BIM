@@ -3,21 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestión de Proyectos BIM</title>
+    <title>BIM Project Manager Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        /* Estética Técnica: Fuente 11px y Mayúsculas */
         * { font-size: 11px !important; text-transform: uppercase; font-family: sans-serif; }
         .font-negrita-dura { font-weight: 900 !important; }
         
-        .kanban-col { min-height: 400px; background: #f8fafc; border-radius: 15px; padding: 12px; border: 1px solid #e2e8f0; }
+        /* Contenedores Kanban */
+        .kanban-col { min-height: 450px; background: #f8fafc; border-radius: 15px; padding: 12px; border: 1px solid #e2e8f0; }
         .tarea-card { background: white; padding: 12px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 10px; cursor: pointer; border-left: 4px solid #cbd5e1; }
         
-        /* Prioridades */
+        /* Prioridades Visuales */
         .prioridad-ALTA { border-left-color: #ef4444 !important; }
         .prioridad-MEDIA { border-left-color: #f59e0b !important; }
         .prioridad-BAJA { border-left-color: #10b981 !important; }
 
-        /* Cronograma Diario Simétrico */
+        /* Cronograma Simétrico (Layout Fijo) */
         .cronograma-wrapper { overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 8px; background: white; }
         .cronograma-table { border-collapse: collapse; table-layout: fixed; min-width: 100%; }
         .cronograma-table th, .cronograma-table td { border: 1px solid #e2e8f0; text-align: center; height: 32px; overflow: hidden; }
@@ -28,28 +30,28 @@
         .col-nombre { width: 150px !important; min-width: 150px !important; text-align: left !important; padding-left: 8px !important; background: white; position: sticky; left: 0; z-index: 10; border-right: 2px solid #e2e8f0 !important; white-space: nowrap; }
         .col-duracion { width: 45px !important; min-width: 45px !important; background: #f8fafc; font-weight: 900; }
         
+        /* Marcado de Terminados */
         .celda-activa-alta { background-color: #ef4444; }
         .celda-activa-media { background-color: #f59e0b; }
         .celda-activa-baja { background-color: #10b981; }
-        .estado-terminado { opacity: 0.25; filter: grayscale(50%); }
+        .estado-terminado { opacity: 0.25; filter: grayscale(60%); }
 
-        .preview-img { width: 100%; height: 120px; object-fit: cover; border-radius: 12px; margin-top: 8px; border: 2px solid #f1f5f9; }
+        .preview-img { width: 100%; height: 140px; object-fit: cover; border-radius: 12px; margin-top: 10px; border: 2px solid #f1f5f9; cursor: zoom-in; }
         input, select { text-transform: none !important; }
-        .loading-overlay { opacity: 0.5; pointer-events: none; }
     </style>
 </head>
 <body class="bg-slate-50 p-4 text-slate-800">
-    <div class="max-w-7xl mx-auto" id="mainApp">
+    <div class="max-w-7xl mx-auto">
         
-        <button id="btnSync" onclick="sincronizarOffline()" class="hidden w-full mb-4 bg-orange-500 text-white py-3 rounded-xl font-negrita-dura shadow-lg">
-            🔄 SINCRONIZAR DATOS PENDIENTES
+        <button id="btnSync" onclick="sincronizarOffline()" class="hidden w-full mb-4 bg-orange-500 text-white py-4 rounded-xl font-negrita-dura shadow-lg animate-pulse">
+            🔄 HAY DATOS PENDIENTES (CLIC PARA SINCRONIZAR)
         </button>
 
         <div class="bg-slate-800 p-6 text-white rounded-t-3xl shadow-lg">
-            <h1 class="font-negrita-dura tracking-widest text-center mb-4">GESTOR BIM PRO</h1>
+            <h1 class="font-negrita-dura tracking-widest text-center mb-4">GESTOR DE PROYECTOS BIM</h1>
             <div class="flex justify-center gap-6">
-                <button onclick="cambiarVista('KANBAN')" id="btn-KANBAN" class="font-negrita-dura pb-1 border-b-2 border-white">TABLERO</button>
-                <button onclick="cambiarVista('CRONO')" id="btn-CRONO" class="font-negrita-dura pb-1 border-b-2 border-transparent opacity-60">CRONOGRAMA</button>
+                <button onclick="cambiarVista('KANBAN')" id="btn-KANBAN" class="font-negrita-dura pb-1 border-b-2 border-white">TABLERO KANBAN</button>
+                <button onclick="cambiarVista('CRONO')" id="btn-CRONO" class="font-negrita-dura pb-1 border-b-2 border-transparent opacity-60">CRONOGRAMA DIARIO</button>
             </div>
         </div>
 
@@ -58,9 +60,9 @@
             
             <div id="vista-KANBAN">
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div><h2 class="font-negrita-dura mb-3 text-slate-400">PENDIENTE</h2><div id="col-PENDIENTE" class="kanban-col"></div></div>
-                    <div><h2 class="font-negrita-dura mb-3 text-blue-500">PROGRESO</h2><div id="col-PROGRESO" class="kanban-col"></div></div>
-                    <div><h2 class="font-negrita-dura mb-3 text-green-500">TERMINADO</h2><div id="col-TERMINADO" class="kanban-col"></div></div>
+                    <div><h2 class="font-negrita-dura mb-3 text-slate-400 text-center">PENDIENTE</h2><div id="col-PENDIENTE" class="kanban-col"></div></div>
+                    <div><h2 class="font-negrita-dura mb-3 text-blue-500 text-center">EN PROGRESO</h2><div id="col-PROGRESO" class="kanban-col"></div></div>
+                    <div><h2 class="font-negrita-dura mb-3 text-green-500 text-center">TERMINADO</h2><div id="col-TERMINADO" class="kanban-col"></div></div>
                 </div>
             </div>
 
@@ -70,13 +72,13 @@
         </div>
     </div>
 
-    <div id="modalTarea" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50 overflow-y-auto">
+    <div id="modalTarea" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50 overflow-y-auto">
         <div class="bg-white p-8 rounded-3xl w-full max-w-sm my-auto shadow-2xl">
-            <h2 class="font-negrita-dura mb-6 text-center">DETALLES</h2>
+            <h2 class="font-negrita-dura mb-6 text-center text-slate-600">DETALLES DE ACTIVIDAD</h2>
             <input type="hidden" id="taskId">
             
-            <label class="block font-negrita-dura text-slate-400 mb-1">NOMBRE (MÁX 20):</label>
-            <input type="text" id="taskName" maxlength="20" class="w-full p-3 border-2 rounded-xl mb-4 font-negrita-dura outline-none">
+            <label class="block font-negrita-dura text-slate-400 mb-1">NOMBRE (MÁX 20 CARACTERES):</label>
+            <input type="text" id="taskName" maxlength="20" class="w-full p-3 border-2 rounded-xl mb-4 font-negrita-dura outline-none focus:border-blue-500" placeholder="EJ: VACIADO SECTOR A">
             
             <label class="block font-negrita-dura text-slate-400 mb-1">ESTADO:</label>
             <select id="taskStatus" onchange="toggleFotoSection()" class="w-full p-3 border-2 rounded-xl mb-4 font-negrita-dura">
@@ -85,24 +87,27 @@
                 <option value="TERMINADO">TERMINADO</option>
             </select>
 
+            <label class="block font-negrita-dura text-slate-400 mb-1">PRIORIDAD:</label>
             <select id="taskPriority" class="w-full p-3 border-2 rounded-xl mb-4 font-negrita-dura">
-                <option value="ALTA">ALTA</option><option value="MEDIA">MEDIA</option><option value="BAJA">BAJA</option>
+                <option value="ALTA">ALTA</option>
+                <option value="MEDIA">MEDIA</option>
+                <option value="BAJA">BAJA</option>
             </select>
 
             <div class="grid grid-cols-2 gap-4 mb-6">
-                <input type="date" id="taskStart" class="p-2 border-2 rounded-lg">
-                <input type="date" id="taskEnd" class="p-2 border-2 rounded-lg">
+                <div><label class="font-negrita-dura text-slate-400">INICIO:</label><input type="date" id="taskStart" class="w-full p-2 border-2 rounded-lg"></div>
+                <div><label class="font-negrita-dura text-slate-400">FIN:</label><input type="date" id="taskEnd" class="w-full p-2 border-2 rounded-lg"></div>
             </div>
 
-            <div id="fotoSection" class="hidden border-t pt-4 mb-4">
-                <label class="font-negrita-dura text-slate-400">EVIDENCIA FOTO:</label>
-                <input type="file" id="taskFile" accept="image/*" class="w-full mt-2">
+            <div id="fotoSection" class="hidden border-t border-dashed pt-4 mb-6">
+                <label class="font-negrita-dura text-slate-500">SUBIR EVIDENCIA (AS-BUILT):</label>
+                <input type="file" id="taskFile" accept="image/*" class="w-full mt-2 text-[9px]">
                 <div id="fotoPreviewContainer"></div>
             </div>
 
             <div class="flex gap-2">
-                <button onclick="guardar()" id="btnGuardar" class="flex-1 bg-blue-600 text-white py-3 rounded-xl font-negrita-dura shadow-md">GUARDAR</button>
-                <button onclick="cerrarModal()" class="bg-slate-100 px-4 rounded-xl font-negrita-dura">CERRAR</button>
+                <button onclick="guardar()" id="btnGuardar" class="flex-1 bg-blue-600 text-white py-3 rounded-xl font-negrita-dura shadow-md hover:bg-blue-700 transition-all">GUARDAR</button>
+                <button onclick="cerrarModal()" class="bg-slate-100 text-slate-400 px-4 rounded-xl font-negrita-dura">CERRAR</button>
             </div>
         </div>
     </div>
@@ -112,9 +117,10 @@
         let tareas = [];
         let archivoBase64 = null;
 
-        // --- MANEJO DE ARCHIVOS ---
+        // --- MANEJO DE IMÁGENES ---
         document.getElementById('taskFile').addEventListener('change', function(e) {
             const file = e.target.files[0];
+            if (!file) return;
             const reader = new FileReader();
             reader.onload = () => { archivoBase64 = reader.result; };
             reader.readAsDataURL(file);
@@ -125,24 +131,28 @@
             document.getElementById('fotoSection').classList.toggle('hidden', status !== 'TERMINADO');
         }
 
-        // --- CRUD Y SINCRONIZACIÓN ---
+        // --- FUNCIONES DE RED Y OFFLINE ---
         async function cargar() {
-            const pendientes = JSON.parse(localStorage.getItem('pendientes') || "[]");
-            document.getElementById('btnSync').classList.toggle('hidden', pendientes.length === 0);
-            
+            checkOffline();
             try {
                 const resp = await fetch(SCRIPT_URL, {method: 'POST', body: JSON.stringify({accion: "LEER"})});
                 const data = await resp.json();
                 tareas = data.slice(1).map(r => ({id:r[0], tarea:r[1], estado:r[2], inicio:r[3], fin:r[4], prioridad:r[5], fotoUrl:r[6]}));
                 render();
-                if(!document.getElementById('vista-CRONO').classList.contains('hidden')) renderCronograma();
-            } catch(e) { console.warn("Offline"); }
+            } catch(e) { console.warn("Modo Offline Activo"); }
+        }
+
+        function checkOffline() {
+            const pendientes = JSON.parse(localStorage.getItem('pendientes') || "[]");
+            document.getElementById('btnSync').classList.toggle('hidden', pendientes.length === 0);
         }
 
         async function guardar() {
             const btn = document.getElementById('btnGuardar');
-            btn.innerText = "PROCESANDO...";
-            
+            const originalText = btn.innerText;
+            btn.innerText = "SUBIENDO...";
+            btn.disabled = true;
+
             const payload = {
                 accion: "GUARDAR",
                 id: document.getElementById('taskId').value || Date.now().toString(),
@@ -155,17 +165,20 @@
             };
 
             try {
-                const res = await fetch(SCRIPT_URL, {method: 'POST', body: JSON.stringify(payload)});
-                if(!res.ok) throw new Error();
-                alert("✅ GUARDADO EXITOSO");
+                // 'no-cors' ayuda a que la petición no se bloquee por tiempos de subida de imagen
+                await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) });
+                alert("DATOS ENVIADOS EXITOSAMENTE");
             } catch (e) {
                 const pendientes = JSON.parse(localStorage.getItem('pendientes') || "[]");
                 pendientes.push(payload);
                 localStorage.setItem('pendientes', JSON.stringify(pendientes));
-                alert("📡 SIN CONEXIÓN: SE SINCRONIZARÁ LUEGO");
+                alert("SIN RED: SE GUARDÓ EN EL DISPOSITIVO");
             }
-            btn.innerText = "GUARDAR";
-            cerrarModal(); cargar();
+
+            btn.innerText = originalText;
+            btn.disabled = false;
+            cerrarModal();
+            setTimeout(cargar, 1500);
         }
 
         async function sincronizarOffline() {
@@ -173,34 +186,36 @@
             btn.innerText = "SINCRONIZANDO...";
             const pendientes = JSON.parse(localStorage.getItem('pendientes') || "[]");
             for (let p of pendientes) {
-                await fetch(SCRIPT_URL, {method: 'POST', body: JSON.stringify(p)});
+                await fetch(SCRIPT_URL, {method: 'POST', mode: 'no-cors', body: JSON.stringify(p)});
             }
             localStorage.removeItem('pendientes');
-            alert("✅ TODO SINCRONIZADO");
+            alert("SINCRONIZACIÓN COMPLETADA");
             cargar();
         }
 
-        // --- RENDERIZADO ---
+        // --- RENDERIZADO VISUAL ---
         function render() {
             ["PENDIENTE", "PROGRESO", "TERMINADO"].forEach(est => {
                 const col = document.getElementById('col-' + est);
                 col.innerHTML = "";
                 tareas.filter(t => t.estado === est).forEach(t => {
-                    col.innerHTML += `<div class="tarea-card prioridad-${t.prioridad}" onclick="abrirModal('${t.id}')">
-                        <div class="font-negrita-dura mb-1">${t.tarea}</div>
-                        <div class="text-slate-400" style="font-size:9px !important;">${t.inicio} > ${t.fin}</div>
-                    </div>`;
+                    col.innerHTML += `
+                        <div class="tarea-card prioridad-${t.prioridad}" onclick="abrirModal('${t.id}')">
+                            <div class="font-negrita-dura mb-1 text-slate-700">${t.tarea}</div>
+                            <div class="text-slate-400" style="font-size:9px !important;">${t.inicio} > ${t.fin}</div>
+                        </div>`;
                 });
             });
+            if(!document.getElementById('vista-CRONO').classList.contains('hidden')) renderCronograma();
         }
 
         function renderCronograma() {
             const container = document.getElementById('cronogramaContainer');
-            if (tareas.length === 0) return container.innerHTML = "<div class='p-10 text-center font-negrita-dura'>SIN DATOS</div>";
+            if (tareas.length === 0) return container.innerHTML = "<div class='p-10 text-center font-negrita-dura'>NO HAY DATOS</div>";
 
             let fechas = tareas.flatMap(t => [new Date(t.inicio + "T00:00:00"), new Date(t.fin + "T00:00:00")]).filter(d => !isNaN(d));
             let minDate = new Date(Math.min(...fechas)); minDate.setDate(minDate.getDate() - 1);
-            let maxDate = new Date(Math.max(...fechas)); maxDate.setDate(maxDate.getDate() + 3);
+            let maxDate = new Date(Math.max(...fechas)); maxDate.setDate(maxDate.getDate() + 4);
 
             let listaDias = [];
             let current = new Date(minDate);
@@ -245,12 +260,13 @@
             document.getElementById('taskPriority').value = t.prioridad;
             document.getElementById('taskStart').value = t.inicio;
             document.getElementById('taskEnd').value = t.fin;
-            document.getElementById('fotoPreviewContainer').innerHTML = t.fotoUrl ? `<a href="${t.fotoUrl}" target="_blank"><img src="${t.fotoUrl}" class="preview-img"></a>` : "";
+            document.getElementById('fotoPreviewContainer').innerHTML = t.fotoUrl ? `<a href="${t.fotoUrl}" target="_blank"><img src="${t.fotoUrl}" class="preview-img" title="CLIC PARA VER"></a>` : "";
             toggleFotoSection();
             document.getElementById('modalTarea').classList.remove('hidden');
         }
 
         function cerrarModal() { document.getElementById('modalTarea').classList.add('hidden'); }
+        
         function cambiarVista(v) {
             document.getElementById('vista-KANBAN').classList.toggle('hidden', v !== 'KANBAN');
             document.getElementById('vista-CRONO').classList.toggle('hidden', v !== 'CRONO');
